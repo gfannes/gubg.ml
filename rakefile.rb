@@ -31,6 +31,7 @@ namespace :ut do
     task :setup do
         ut = Build::Executable.new('unit_tests')
         ut.add_include_path(shared_dir('include'))
+        ut.add_define('DEBUG')
         ut.add_sources(FileList.new('src/test/**/*.cpp'))
         ut.add_sources(FileList.new(shared('include', '**/*.hpp')))
         ut.add_sources(shared_file('source', 'catch_runner.cpp'))
