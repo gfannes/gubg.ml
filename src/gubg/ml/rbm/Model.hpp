@@ -6,6 +6,7 @@
 #include "gubg/mss.hpp"
 #include <vector>
 #include <algorithm>
+#include <cassert>
 
 namespace gubg { namespace ml { namespace rbm { 
 
@@ -21,9 +22,9 @@ namespace gubg { namespace ml { namespace rbm {
                     bool energy(Energy &e, const Vis &vis, const Hid &hid) const
                     {
                         MSS_BEGIN(bool);
-                        MSS(vis.size() == bias_v_.size());
-                        MSS(hid.size() == bias_h_.size());
                         MSS(weights_v2h_.multiply(e, hid, vis));
+                        assert(vis.size() == bias_v_.size());
+                        assert(hid.size() == bias_h_.size());
                         e = std::inner_product(RANGE(bias_v_), vis.begin(), e);
                         e = std::inner_product(RANGE(bias_h_), hid.begin(), e);
                         e = -e;
