@@ -52,6 +52,7 @@ namespace gubg { namespace ml { namespace scg {
             while (true)
             {
                 S("loop");
+                L("Inputs current: " << function.input.to_hr(*input_current));
                 L("Direction current: " << function.input.to_hr(*direction_current));
                 MSS(function.input.inproduct(direction_l22, *direction_current, *direction_current));
                 L(STREAM(k, direction_l22));
@@ -72,7 +73,7 @@ namespace gubg { namespace ml { namespace scg {
                     L("Input alt: " << function.input.to_hr(*input_next));
                     MSS(function.gradient(s, *input_next));
                     L("Gradient: " << function.input.to_hr(s));
-                    MSS(function.input.translate(s, *gradient_current, -1.0));
+                    MSS(function.input.translate(s, *gradient_current, 1.0));
                     L("Diff: " << function.input.to_hr(s));
                     MSS(function.input.scale(s, 1.0/sigma_k));
                     L("s: " << function.input.to_hr(s));
