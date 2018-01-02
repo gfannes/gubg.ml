@@ -1,0 +1,14 @@
+root.book("gubg/ml", fun(b){
+    b.recipe("func", fun(r){
+        r.add("src", "gubg/**.hpp")
+        r.add("src", "gubg/**.cpp")
+        r.depends_on("math/func")
+        r.depends_on("algo/func")
+    })
+
+    b.recipe("ut", fun(r){
+        r.add("test/src", "**.cpp")
+        r.depends_on("func")
+        r.depends_on("/catch/func")
+    })
+})

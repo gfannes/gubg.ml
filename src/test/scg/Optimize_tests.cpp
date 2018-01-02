@@ -3,6 +3,7 @@
 #include "gubg/Range.hpp"
 #include <vector>
 #include <algorithm>
+#include <numeric>
 #include <sstream>
 using namespace gubg::ml;
 

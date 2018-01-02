@@ -2,7 +2,7 @@
 #define HEADER_gubg_ml_rbm_Model_hpp_ALREADY_INCLUDED
 
 #include "gubg/Matrix.hpp"
-#include "gubg/sigmoid.hpp"
+#include "gubg/Sigmoid.hpp"
 #include "gubg/Range.hpp"
 #include "gubg/mss.hpp"
 #include <vector>
