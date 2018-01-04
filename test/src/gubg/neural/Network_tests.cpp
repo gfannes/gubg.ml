@@ -16,8 +16,9 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
 {
     neural::Network<Float> nn(1);
 
+    REQUIRE(nn.nr_inputs() == 1);
     REQUIRE(nn.nr_weights() == 0);
-    REQUIRE(nn.nr_postacts() == 1+1);
+    REQUIRE(nn.nr_postacts() == nn.nr_inputs()+2);
 
     SECTION("forward without any neuron")
     {

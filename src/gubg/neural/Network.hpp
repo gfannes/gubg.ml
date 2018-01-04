@@ -119,14 +119,18 @@ namespace gubg { namespace neural {
         Network(size_t nr_inputs): nr_inputs_(nr_inputs)
         {
             nr_postacts_ = nr_inputs_;
-            nr_postacts_ += 1;
+            nr_postacts_ += 1+1;
         }
 
+        size_t nr_inputs()  const {return nr_inputs_;}
         size_t nr_weights() const {return nr_weights_;}
         size_t nr_postacts() const {return nr_postacts_;}
 
         size_t input(size_t offset) const {return 0+offset;}
+        //Input fixed at 1
         size_t bias() const {return nr_inputs_;}
+        //Input fixed at 0: can be used to disable weights
+        size_t zero() const {return nr_inputs_+1;}
 
         //Optional arguments output and weight will provide info on where the neuron
         //will store its output in the postacts array, and where the first weight starts
@@ -141,10 +145,9 @@ namespace gubg { namespace neural {
         void forward(Float *postacts, const Float *weights) const
         {
             postacts[bias()] = 1.0;
+            postacts[zero()] = 0.0;
             for (const auto &neuron: neurons_)
-            {
                 neuron->forward(postacts, weights);
-            }
         }
 
     private:
