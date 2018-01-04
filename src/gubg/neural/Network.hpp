@@ -17,6 +17,37 @@ namespace gubg { namespace neural {
         Linear, Tanh, Sigmoid, LeakyReLU, 
     };
 
+    namespace transfer { 
+        struct Identity
+        {
+            template <typename Float>
+            void operator()(Float &) const {}
+        };
+        struct Tanh
+        {
+            template <typename Float>
+            void operator()(Float &v) const
+            {
+                gubg::Tanh<Float> tanh;
+                v = tanh(v);
+            }
+        };
+        struct Sigmoid
+        {
+            template <typename Float>
+            void operator()(Float &v) const
+            {
+                gubg::Sigmoid<Float> sigmoid;
+                v = sigmoid(v);
+            }
+        };
+        struct LeakyReLU
+        {
+            template <typename Float>
+            void operator()(Float &v) const {if (v < 0) v *= 0.01;}
+        };
+    } 
+
     namespace neuron { 
         template <typename Float>
         class Interface
@@ -49,8 +80,8 @@ namespace gubg { namespace neural {
             }
         };
 
-        template <typename Float>
-        class Linear: public Interface<Float>
+        template <typename Float, typename Transfer>
+        class Neuron: public Interface<Float>
         {
         private:
             using Base = Interface<Float>;
@@ -58,68 +89,23 @@ namespace gubg { namespace neural {
             Float *forward(Float *postacts, const Float *weights) const override
             {
                 auto &dst = Base::preactivate_(postacts, weights);
+                transfer_(dst);
                 return &dst;
             }
         private:
+            Transfer transfer_;
         };
 
-        template <typename Float>
-        class Tanh: public Interface<Float>
-        {
-        private:
-            using Base = Interface<Float>;
-        public:
-            Float *forward(Float *postacts, const Float *weights) const override
-            {
-                auto &dst = Base::preactivate_(postacts, weights);
-                dst = tanh_(dst);
-                return &dst;
-            }
-        private:
-            gubg::Tanh<Float> tanh_;
-        };
 
         template <typename Float>
-        class Sigmoid: public Interface<Float>
+        Interface<Float> *create(Transfer tf)
         {
-        private:
-            using Base = Interface<Float>;
-        public:
-            Float *forward(Float *postacts, const Float *weights) const override
+            switch (tf)
             {
-                auto &dst = Base::preactivate_(postacts, weights);
-                dst = sigmoid_(dst);
-                return &dst;
-            }
-        private:
-            gubg::Sigmoid<Float> sigmoid_;
-        };
-
-        template <typename Float>
-        class LeakyReLU: public Interface<Float>
-        {
-        private:
-            using Base = Interface<Float>;
-        public:
-            Float *forward(Float *postacts, const Float *weights) const override
-            {
-                auto &dst = Base::preactivate_(postacts, weights);
-                if (dst < 0)
-                    dst *= 0.01;
-                return &dst;
-            }
-        private:
-        };
-
-        template <typename Float>
-        Interface<Float> *create(Transfer transfer)
-        {
-            switch (transfer)
-            {
-                case Transfer::Linear:    return new Linear<Float>;
-                case Transfer::Tanh:      return new Tanh<Float>;
-                case Transfer::Sigmoid:   return new Sigmoid<Float>;
-                case Transfer::LeakyReLU: return new LeakyReLU<Float>;
+                case Transfer::Linear:    return new Neuron<Float, transfer::Identity>;
+                case Transfer::Tanh:      return new Neuron<Float, transfer::Tanh>;
+                case Transfer::Sigmoid:   return new Neuron<Float, transfer::Sigmoid>;
+                case Transfer::LeakyReLU: return new Neuron<Float, transfer::LeakyReLU>;
             }
             assert(false);
             return nullptr;
@@ -145,11 +131,11 @@ namespace gubg { namespace neural {
         //Optional arguments output and weight will provide info on where the neuron
         //will store its output in the postacts array, and where the first weight starts
         template <typename Inputs>
-        bool add_neuron(Transfer transfer, const Inputs &inputs) { return add_neuron_<Inputs, size_t>(transfer, inputs, nullptr, nullptr); }
+        bool add_neuron(Transfer tf, const Inputs &inputs) { return add_neuron_<Inputs, size_t>(tf, inputs, nullptr, nullptr); }
         template <typename Inputs, typename IX>
-        bool add_neuron(Transfer transfer, const Inputs &inputs, IX &output) { return add_neuron_<Inputs, IX>(transfer, inputs, &output, nullptr); }
+        bool add_neuron(Transfer tf, const Inputs &inputs, IX &output) { return add_neuron_<Inputs, IX>(tf, inputs, &output, nullptr); }
         template <typename Inputs, typename IX>
-        bool add_neuron(Transfer transfer, const Inputs &inputs, IX &output, IX &weight) { return add_neuron_<Inputs, IX>(transfer, inputs, &output, &weight); }
+        bool add_neuron(Transfer tf, const Inputs &inputs, IX &output, IX &weight) { return add_neuron_<Inputs, IX>(tf, inputs, &output, &weight); }
 
         //Expects input at start of postacts
         void forward(Float *postacts, const Float *weights) const
@@ -166,10 +152,10 @@ namespace gubg { namespace neural {
         using Neurons = std::list<typename Neuron_itf::Ptr>;
 
         template <typename Inputs, typename IX>
-        bool add_neuron_(Transfer transfer, const Inputs &inputs, IX *output, IX *weight)
+        bool add_neuron_(Transfer tf, const Inputs &inputs, IX *output, IX *weight)
         {
             MSS_BEGIN(bool);
-            neurons_.emplace_back(neuron::create<Float>(transfer));
+            neurons_.emplace_back(neuron::create<Float>(tf));
             auto &ptr = neurons_.back();
             MSS(!!ptr, neurons_.pop_back());
             auto &n = *ptr;
