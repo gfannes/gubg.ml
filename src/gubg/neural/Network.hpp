@@ -144,7 +144,7 @@ namespace gubg { namespace neural {
 
         //Optional arguments output and weight will provide info on where the neuron
         //will store its output in the postacts array, and where the first weight starts
-        template <typename Inputs, typename IX>
+        template <typename Inputs, typename IX = size_t>
         bool add_neuron(Transfer transfer, const Inputs &inputs, IX *output = nullptr, IX *weight = nullptr)
         {
             MSS_BEGIN(bool);
