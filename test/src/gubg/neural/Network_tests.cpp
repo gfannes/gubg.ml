@@ -53,29 +53,39 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
         weights[leakyrelu.weight_ix] = 1.0;
 
         Vector postacts(nn.nr_postacts());
+        Vector postacts2(nn.nr_postacts());
+        Vector preacts(nn.nr_postacts());
 
         naft::Document naft(std::cout);
         auto root = naft.node("tanh");
         for (Float x = -2.0; x <= 2.0; x += 0.01)
         {
             postacts[nn.input(0)] = x;
-            nn.forward(postacts.data(), weights.data());
+            nn.forward(postacts.data(), preacts.data(), weights.data());
+            postacts2[nn.input(0)] = x;
+            nn.forward(postacts2.data(), weights.data());
+
+            REQUIRE(postacts == postacts2);
 
             linear.output = postacts[linear.output_ix];
+            REQUIRE(x == preacts[linear.output_ix]);
             REQUIRE(x == linear.output);
 
             tanh.output = postacts[tanh.output_ix];
             REQUIRE((x < 0.0)  == (tanh.output < 0.0));
             REQUIRE((x == 0.0) == (tanh.output == 0.0));
             REQUIRE((x > 0.0)  == (tanh.output > 0.0));
+            REQUIRE(x == preacts[tanh.output_ix]);
 
             sigmoid.output = postacts[sigmoid.output_ix];
             REQUIRE((x < 1.0)  == (sigmoid.output < 0.5));
             REQUIRE((x == 1.0) == (sigmoid.output == 0.5));
             REQUIRE((x > 1.0)  == (sigmoid.output > 0.5));
+            REQUIRE(preacts[sigmoid.output_ix] == Approx(x*10.0-10.0));
 
             leakyrelu.output = postacts[leakyrelu.output_ix];
             REQUIRE(((x < 0.0 && x < leakyrelu.output) || (x >= 0.0 && x == leakyrelu.output)));
+            REQUIRE(x == preacts[leakyrelu.output_ix]);
 
             root.node("point").attr("x", x).attr("linear", linear.output).attr("tanh", tanh.output).attr("sigmoid", sigmoid.output).attr("leakyrelu", leakyrelu.output);
         }

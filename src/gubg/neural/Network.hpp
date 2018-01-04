@@ -67,6 +67,7 @@ namespace gubg { namespace neural {
             virtual ~Interface() {}
 
             virtual Float *forward(Float *postacts, const Float *weights) const = 0;
+            virtual Float *forward(Float *postacts, Float *preacts, const Float *weights) const = 0;
 
         protected:
             Float &preactivate_(Float *postacts, const Float *weights) const
@@ -89,6 +90,13 @@ namespace gubg { namespace neural {
             Float *forward(Float *postacts, const Float *weights) const override
             {
                 auto &dst = Base::preactivate_(postacts, weights);
+                transfer_(dst);
+                return &dst;
+            }
+            Float *forward(Float *postacts, Float *preacts, const Float *weights) const override
+            {
+                auto &dst = Base::preactivate_(postacts, weights);
+                preacts[Base::output] = dst;
                 transfer_(dst);
                 return &dst;
             }
@@ -148,6 +156,13 @@ namespace gubg { namespace neural {
             postacts[zero()] = 0.0;
             for (const auto &neuron: neurons_)
                 neuron->forward(postacts, weights);
+        }
+        void forward(Float *postacts, Float *preacts, const Float *weights) const
+        {
+            postacts[bias()] = 1.0;
+            postacts[zero()] = 0.0;
+            for (const auto &neuron: neurons_)
+                neuron->forward(postacts, preacts, weights);
         }
 
     private:
