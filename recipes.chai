@@ -9,6 +9,7 @@ root.book("gubg/ml", fun(b){
     b.recipe("ut", fun(r){
         r.add("test/src", "**.cpp")
         r.depends_on("func")
+        r.depends_on("io/func")
         r.depends_on("/catch/func")
     })
 })
