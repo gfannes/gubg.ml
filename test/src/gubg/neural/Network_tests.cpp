@@ -37,10 +37,10 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
             Float output;
         };
         Info linear, tanh, sigmoid, leakyrelu;
-        REQUIRE(nn.add_neuron(neural::Transfer::Linear,    inputs, &linear.output_ix, &linear.weight_ix));
-        REQUIRE(nn.add_neuron(neural::Transfer::Tanh,      inputs, &tanh.output_ix, &tanh.weight_ix));
-        REQUIRE(nn.add_neuron(neural::Transfer::Sigmoid,   inputs, &sigmoid.output_ix, &sigmoid.weight_ix));
-        REQUIRE(nn.add_neuron(neural::Transfer::LeakyReLU, inputs, &leakyrelu.output_ix, &leakyrelu.weight_ix));
+        REQUIRE(nn.add_neuron(neural::Transfer::Linear,    inputs, linear.output_ix, linear.weight_ix));
+        REQUIRE(nn.add_neuron(neural::Transfer::Tanh,      inputs, tanh.output_ix, tanh.weight_ix));
+        REQUIRE(nn.add_neuron(neural::Transfer::Sigmoid,   inputs, sigmoid.output_ix, sigmoid.weight_ix));
+        REQUIRE(nn.add_neuron(neural::Transfer::LeakyReLU, inputs, leakyrelu.output_ix, leakyrelu.weight_ix));
 
         REQUIRE(nn.nr_weights() == 2+2+2+2);
 
@@ -91,7 +91,7 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
             for (unsigned int i = 0; i < nr_output; ++i)
             {
                 size_t output;
-                ok && (ok = nn.add_neuron(neural::Transfer::Tanh, inputs, &output));
+                ok && (ok = nn.add_neuron(neural::Transfer::Tanh, inputs, output));
                 if (i == 0)
                     input = output;
             }

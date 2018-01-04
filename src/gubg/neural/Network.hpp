@@ -144,8 +144,29 @@ namespace gubg { namespace neural {
 
         //Optional arguments output and weight will provide info on where the neuron
         //will store its output in the postacts array, and where the first weight starts
-        template <typename Inputs, typename IX = size_t>
-        bool add_neuron(Transfer transfer, const Inputs &inputs, IX *output = nullptr, IX *weight = nullptr)
+        template <typename Inputs>
+        bool add_neuron(Transfer transfer, const Inputs &inputs) { return add_neuron_<Inputs, size_t>(transfer, inputs, nullptr, nullptr); }
+        template <typename Inputs, typename IX>
+        bool add_neuron(Transfer transfer, const Inputs &inputs, IX &output) { return add_neuron_<Inputs, IX>(transfer, inputs, &output, nullptr); }
+        template <typename Inputs, typename IX>
+        bool add_neuron(Transfer transfer, const Inputs &inputs, IX &output, IX &weight) { return add_neuron_<Inputs, IX>(transfer, inputs, &output, &weight); }
+
+        //Expects input at start of postacts
+        void forward(Float *postacts, const Float *weights) const
+        {
+            postacts[bias()] = 1.0;
+            for (const auto &neuron: neurons_)
+            {
+                neuron->forward(postacts, weights);
+            }
+        }
+
+    private:
+        using Neuron_itf = neuron::Interface<Float>;
+        using Neurons = std::list<typename Neuron_itf::Ptr>;
+
+        template <typename Inputs, typename IX>
+        bool add_neuron_(Transfer transfer, const Inputs &inputs, IX *output, IX *weight)
         {
             MSS_BEGIN(bool);
             neurons_.emplace_back(neuron::create<Float>(transfer));
@@ -162,20 +183,6 @@ namespace gubg { namespace neural {
             nr_weights_ += inputs.size();
             MSS_END();
         }
-
-        //Expects input at start of postacts
-        void forward(Float *postacts, const Float *weights) const
-        {
-            postacts[bias()] = 1.0;
-            for (const auto &neuron: neurons_)
-            {
-                neuron->forward(postacts, weights);
-            }
-        }
-
-    private:
-        using Neuron_itf = neuron::Interface<Float>;
-        using Neurons = std::list<typename Neuron_itf::Ptr>;
 
         const size_t nr_inputs_;
         size_t nr_weights_ = 0;
