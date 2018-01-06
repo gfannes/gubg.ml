@@ -145,7 +145,7 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
 
         size_t ll = 999;
         std::array<size_t, 1> inputs = {input}, outputs = {output};
-        REQUIRE(nn.add_loglikelihood(inputs, outputs, ll, 0.001));
+        REQUIRE(nn.add_loglikelihood(inputs, outputs, ll, 0.1));
         REQUIRE(ll != 999);
         REQUIRE(nn.nr_weights() == 0);
 
@@ -154,7 +154,7 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
         states[output] = 3.0;
 
         nn.forward(states.data(), nullptr);
-        REQUIRE(states[ll] == 0.002f);
+        REQUIRE(states[ll] == 200);
 
         std::cout << C(states[ll]) << std::endl;
     }

@@ -71,44 +71,54 @@ namespace gubg { namespace neural {
 
     namespace cost { 
         template <typename Float>
-        class LogLikelihood: public unit::Interface<Float>
+        class Quadratic: public unit::Interface<Float>
         {
         public:
-            using Pair = std::pair<size_t, size_t>;
-            using Pairs = std::vector<Pair>;
-
-            template <typename IXs>
-            LogLikelihood(const IXs &mean, const IXs &wanted, size_t output, Float sigma): output_(output), sigma_2_(sigma*0.5), inputs_(mean.size())
-            {
-                for (size_t i = 0; i < mean.size(); ++i)
-                    inputs_[i] = Pair{mean[i], wanted[i]};
-            }
+            Quadratic(size_t mean, size_t wanted, size_t output): mean_(mean), wanted_(wanted), output_(output) { }
 
             void forward(Float *states, const Float *weights) const override
             {
-                Float lp = 0.0;
-                for (const auto &p: inputs_)
-                {
-                    const auto diff = (states[p.first] - states[p.second]);
-                    lp += diff*diff*sigma_2_;
-                }
-                states[output_] = lp;
+                states[output_] = (states[mean_] - states[wanted_]);
+                quadratic_(states[output_]);
             }
             void forward(Float *states, Float *preacts, const Float *weights) const override
             {
-                Float lp = 0.0;
-                for (const auto &p: inputs_)
-                {
-                    const auto diff = (states[p.first] - states[p.second]);
-                    lp += diff*diff*sigma_2_;
-                }
-                states[output_] = lp;
-                preacts[output_] = lp;
+                preacts[output_] = states[output_] = (states[mean_] - states[wanted_]);
+                quadratic_(states[output_]);
             }
         private:
+            const size_t mean_;
+            const size_t wanted_;
             const size_t output_;
-            const Float sigma_2_;
-            Pairs inputs_;
+            transfer::Quadratic quadratic_;
+        };
+
+        template <typename Float>
+        class Sum: public unit::Interface<Float>
+        {
+        public:
+            using IXs = std::vector<size_t>;
+
+            template <typename IXs>
+            Sum(const IXs &ixs, size_t output, Float factor = 1.0): output_(output), factor_(factor), inputs_(RANGE(ixs)) { }
+
+            void forward(Float *states, const Float *weights) const override
+            {
+                Float sum = 0.0;
+                for (auto input: inputs_)
+                    sum += states[input];
+                states[output_] = sum*factor_;
+            }
+            void forward(Float *states, Float *preacts, const Float *weights) const override
+            {
+                forward(states, weights);
+                preacts[output_] = states[output_];
+            }
+
+        private:
+            const size_t output_;
+            const Float factor_;
+            IXs inputs_;
         };
     } 
 
@@ -205,12 +215,20 @@ namespace gubg { namespace neural {
         bool add_neuron(Transfer tf, const Inputs &inputs, IX &output, IX &weight) { return add_neuron_<Inputs, IX>(tf, inputs, &output, &weight); }
 
         template <typename IXs, typename IX>
-        bool add_loglikelihood(const IXs &mean, const IXs &wanted, IX &output, Float sigma = 1.0)
+        bool add_loglikelihood(const IXs &mean, const IXs &wanted, IX &output, Float stddev = 1.0)
         {
             MSS_BEGIN(bool);
             MSS(mean.size() == wanted.size());
+            const auto size = mean.size();
+            std::vector<size_t> quads(size);
+            for (size_t i = 0; i < size; ++i)
+            {
+                const size_t out = nr_states_++;
+                units_.emplace_back(new cost::Quadratic<Float>(mean[i], wanted[i], out));
+                quads[i] = out;
+            }
             output = nr_states_++;
-            units_.emplace_back(new cost::LogLikelihood<Float>(mean, wanted, output, sigma));
+            units_.emplace_back(new cost::Sum<Float>(quads, output, 1.0/stddev/stddev));
             MSS_END();
         }
 
