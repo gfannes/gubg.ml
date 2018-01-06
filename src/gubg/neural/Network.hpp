@@ -14,7 +14,7 @@ namespace gubg { namespace neural {
 
     enum class Transfer
     {
-        Linear, Tanh, Sigmoid, LeakyReLU, 
+        Linear, Tanh, Sigmoid, LeakyReLU, Quadratic,
     };
 
     namespace transfer { 
@@ -45,6 +45,11 @@ namespace gubg { namespace neural {
         {
             template <typename Float>
             void operator()(Float &v) const {if (v < 0) v *= 0.01;}
+        };
+        struct Quadratic
+        {
+            template <typename Float>
+            void operator()(Float &v) const {v = v*v*0.5;}
         };
     } 
 
@@ -114,6 +119,7 @@ namespace gubg { namespace neural {
                 case Transfer::Tanh:      return new Neuron<Float, transfer::Tanh>;
                 case Transfer::Sigmoid:   return new Neuron<Float, transfer::Sigmoid>;
                 case Transfer::LeakyReLU: return new Neuron<Float, transfer::LeakyReLU>;
+                case Transfer::Quadratic: return new Neuron<Float, transfer::Quadratic>;
             }
             assert(false);
             return nullptr;

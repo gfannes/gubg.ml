@@ -31,13 +31,14 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
             size_t output_ix, weight_ix;
             Float output;
         };
-        Info linear, tanh, sigmoid, leakyrelu;
+        Info linear, tanh, sigmoid, leakyrelu, quadratic;
         REQUIRE(nn.add_neuron(neural::Transfer::Linear,    inputs, linear.output_ix, linear.weight_ix));
         REQUIRE(nn.add_neuron(neural::Transfer::Tanh,      inputs, tanh.output_ix, tanh.weight_ix));
         REQUIRE(nn.add_neuron(neural::Transfer::Sigmoid,   inputs, sigmoid.output_ix, sigmoid.weight_ix));
         REQUIRE(nn.add_neuron(neural::Transfer::LeakyReLU, inputs, leakyrelu.output_ix, leakyrelu.weight_ix));
+        REQUIRE(nn.add_neuron(neural::Transfer::Quadratic, inputs, quadratic.output_ix, quadratic.weight_ix));
 
-        REQUIRE(nn.nr_weights() == 2+2+2+2);
+        REQUIRE(nn.nr_weights() == 2+2+2+2+2);
 
         Vector weights(nn.nr_weights());
         weights[linear.weight_ix] = 1.0;
@@ -45,6 +46,7 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
         weights[sigmoid.weight_ix] = 10.0;
         weights[sigmoid.weight_ix+1] = -10.0;
         weights[leakyrelu.weight_ix] = 1.0;
+        weights[quadratic.weight_ix] = 1.0;
 
         Vector states(nn.nr_states());
         states[bias] = 1.0;
@@ -83,7 +85,16 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
             REQUIRE(((x < 0.0 && x < leakyrelu.output) || (x >= 0.0 && x == leakyrelu.output)));
             REQUIRE(x == preacts[leakyrelu.output_ix]);
 
-            root.node("point").attr("x", x).attr("linear", linear.output).attr("tanh", tanh.output).attr("sigmoid", sigmoid.output).attr("leakyrelu", leakyrelu.output);
+            quadratic.output = states[quadratic.output_ix];
+            REQUIRE((x == 0.0) == (quadratic.output == 0.0));
+            REQUIRE(quadratic.output >= 0.0);
+
+            root.node("point").attr("x", x)
+            .attr("linear", linear.output)
+            .attr("tanh", tanh.output)
+            .attr("sigmoid", sigmoid.output)
+            .attr("leakyrelu", leakyrelu.output)
+            .attr("quadratic", quadratic.output);
         }
     }
 
