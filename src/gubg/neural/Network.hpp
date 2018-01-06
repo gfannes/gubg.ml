@@ -149,6 +149,23 @@ namespace gubg { namespace neural {
         template <typename Inputs, typename IX>
         bool add_neuron(Transfer tf, const Inputs &inputs, IX &output, IX &weight) { return add_neuron_<Inputs, IX>(tf, inputs, &output, &weight); }
 
+        template <typename IXs, typename IX>
+        bool add_loglikelihood(const IXs &mean, const IXs &wanted, IX &output)
+        {
+            MSS_BEGIN(bool);
+            MSS(mean.size() == wanted.size());
+            const auto size = mean.size();
+            std::vector<size_t> quads(size);
+            for (size_t ix = 0; ix < size; ++ix)
+            {
+                std::array<size_t, 2> inputs = {mean[ix], wanted[ix]};
+                //TODO: this should be a neuron with fixed weights: 1, -1
+                MSS(add_neuron(Transfer::Quadratic, inputs, quads[ix]));
+            }
+            MSS(add_neuron(Transfer::Linear, quads, output));
+            MSS_END();
+        }
+
         //Expects input at start of states
         void forward(Float *states, const Float *weights) const
         {
