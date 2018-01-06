@@ -1,6 +1,7 @@
 #include "catch.hpp"
 #include "gubg/neural/Network.hpp"
 #include "gubg/naft/Document.hpp"
+#include "gubg/hr.hpp"
 #include <vector>
 #include <iostream>
 #include <numeric>
@@ -157,5 +158,29 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
         REQUIRE(states[ll] == 200);
 
         std::cout << C(states[ll]) << std::endl;
+    }
+
+    SECTION("backward")
+    {
+        size_t output, weight;
+        nn.add_neuron(neural::Transfer::Quadratic, inputs, output, weight);
+
+        Vector states(nn.nr_states());
+        states[input] = 2.0;
+        states[bias] = 1.0;
+
+        Vector weights(nn.nr_weights());
+        weights[weight] = 0.1;
+        weights[weight+1] = 0.3;
+
+        Vector preacts(nn.nr_states());
+        nn.forward(states.data(), preacts.data(), weights.data());
+
+        Vector derivative(nn.nr_states());
+        Vector gradient(nn.nr_weights());
+        nn.backward(output, derivative.data(), gradient.data(), states.data(), preacts.data(), weights.data());
+
+        std::cout << C(gubg::hr(derivative)) << std::endl;
+        std::cout << C(gubg::hr(gradient)) << std::endl;
     }
 }
