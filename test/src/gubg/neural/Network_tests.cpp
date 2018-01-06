@@ -138,4 +138,24 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
         REQUIRE(0.0 < states[layer_input]);
         REQUIRE(states[layer_input] < 1.0);
     }
+
+    SECTION("loglikelihood")
+    {
+        const auto output = nn.add_external(1);
+
+        size_t ll = 999;
+        std::array<size_t, 1> inputs = {input}, outputs = {output};
+        REQUIRE(nn.add_loglikelihood(inputs, outputs, ll, 0.001));
+        REQUIRE(ll != 999);
+        REQUIRE(nn.nr_weights() == 0);
+
+        Vector states(nn.nr_states());
+        states[input] = 1.0;
+        states[output] = 3.0;
+
+        nn.forward(states.data(), nullptr);
+        REQUIRE(states[ll] == 0.002f);
+
+        std::cout << C(states[ll]) << std::endl;
+    }
 }

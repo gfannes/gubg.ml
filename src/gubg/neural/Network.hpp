@@ -12,6 +12,22 @@
 
 namespace gubg { namespace neural { 
 
+    namespace unit { 
+        template <typename Float>
+        class Interface
+        {
+        private:
+            using Self = Interface<Float>;
+        public:
+            using Ptr = std::unique_ptr<Self>;
+
+            virtual ~Interface() {}
+
+            virtual void forward(Float *states, const Float *weights) const = 0;
+            virtual void forward(Float *states, Float *preacts, const Float *weights) const = 0;
+        };
+    } 
+
     enum class Transfer
     {
         Linear, Tanh, Sigmoid, LeakyReLU, Quadratic,
@@ -53,12 +69,55 @@ namespace gubg { namespace neural {
         };
     } 
 
+    namespace cost { 
+        template <typename Float>
+        class LogLikelihood: public unit::Interface<Float>
+        {
+        public:
+            using Pair = std::pair<size_t, size_t>;
+            using Pairs = std::vector<Pair>;
+
+            template <typename IXs>
+            LogLikelihood(const IXs &mean, const IXs &wanted, size_t output, Float sigma): output_(output), sigma_2_(sigma*0.5), inputs_(mean.size())
+            {
+                for (size_t i = 0; i < mean.size(); ++i)
+                    inputs_[i] = Pair{mean[i], wanted[i]};
+            }
+
+            void forward(Float *states, const Float *weights) const override
+            {
+                Float lp = 0.0;
+                for (const auto &p: inputs_)
+                {
+                    const auto diff = (states[p.first] - states[p.second]);
+                    lp += diff*diff*sigma_2_;
+                }
+                states[output_] = lp;
+            }
+            void forward(Float *states, Float *preacts, const Float *weights) const override
+            {
+                Float lp = 0.0;
+                for (const auto &p: inputs_)
+                {
+                    const auto diff = (states[p.first] - states[p.second]);
+                    lp += diff*diff*sigma_2_;
+                }
+                states[output_] = lp;
+                preacts[output_] = lp;
+            }
+        private:
+            const size_t output_;
+            const Float sigma_2_;
+            Pairs inputs_;
+        };
+    } 
+
     namespace neuron { 
         template <typename Float>
-        class Interface
+        class Base: public unit::Interface<Float>
         {
         private:
-            using Self = Interface<Float>;
+            using Self = Base<Float>;
         public:
             using Ptr = std::unique_ptr<Self>;
             using Inputs = std::vector<size_t>;
@@ -69,10 +128,7 @@ namespace gubg { namespace neural {
             Output output;
             Weight weight;
 
-            virtual ~Interface() {}
-
-            virtual Float *forward(Float *states, const Float *weights) const = 0;
-            virtual Float *forward(Float *states, Float *preacts, const Float *weights) const = 0;
+            virtual ~Base() {}
 
         protected:
             Float &preactivate_(Float *states, const Float *weights) const
@@ -87,31 +143,28 @@ namespace gubg { namespace neural {
         };
 
         template <typename Float, typename Transfer>
-        class Neuron: public Interface<Float>
+        class Neuron: public Base<Float>
         {
         private:
-            using Base = Interface<Float>;
+            using B = Base<Float>;
         public:
-            Float *forward(Float *states, const Float *weights) const override
+            void forward(Float *states, const Float *weights) const override
             {
-                auto &dst = Base::preactivate_(states, weights);
+                auto &dst = B::preactivate_(states, weights);
                 transfer_(dst);
-                return &dst;
             }
-            Float *forward(Float *states, Float *preacts, const Float *weights) const override
+            void forward(Float *states, Float *preacts, const Float *weights) const override
             {
-                auto &dst = Base::preactivate_(states, weights);
-                preacts[Base::output] = dst;
+                auto &dst = B::preactivate_(states, weights);
+                preacts[B::output] = dst;
                 transfer_(dst);
-                return &dst;
             }
         private:
             Transfer transfer_;
         };
 
-
         template <typename Float>
-        Interface<Float> *create(Transfer tf)
+        Base<Float> *create(Transfer tf)
         {
             switch (tf)
             {
@@ -133,6 +186,8 @@ namespace gubg { namespace neural {
         size_t nr_states() const {return nr_states_;}
         size_t nr_weights() const {return nr_weights_;}
 
+        //Adds <size> states that should be given values externally, e.g.,
+        //inputs, bias input or target outputs
         size_t add_external(size_t size)
         {
             const auto ix = nr_states_;
@@ -150,45 +205,37 @@ namespace gubg { namespace neural {
         bool add_neuron(Transfer tf, const Inputs &inputs, IX &output, IX &weight) { return add_neuron_<Inputs, IX>(tf, inputs, &output, &weight); }
 
         template <typename IXs, typename IX>
-        bool add_loglikelihood(const IXs &mean, const IXs &wanted, IX &output)
+        bool add_loglikelihood(const IXs &mean, const IXs &wanted, IX &output, Float sigma = 1.0)
         {
             MSS_BEGIN(bool);
             MSS(mean.size() == wanted.size());
-            const auto size = mean.size();
-            std::vector<size_t> quads(size);
-            for (size_t ix = 0; ix < size; ++ix)
-            {
-                std::array<size_t, 2> inputs = {mean[ix], wanted[ix]};
-                //TODO: this should be a neuron with fixed weights: 1, -1
-                MSS(add_neuron(Transfer::Quadratic, inputs, quads[ix]));
-            }
-            MSS(add_neuron(Transfer::Linear, quads, output));
+            output = nr_states_++;
+            units_.emplace_back(new cost::LogLikelihood<Float>(mean, wanted, output, sigma));
             MSS_END();
         }
 
-        //Expects input at start of states
         void forward(Float *states, const Float *weights) const
         {
-            for (const auto &neuron: neurons_)
+            for (const auto &neuron: units_)
                 neuron->forward(states, weights);
         }
         void forward(Float *states, Float *preacts, const Float *weights) const
         {
-            for (const auto &neuron: neurons_)
+            for (const auto &neuron: units_)
                 neuron->forward(states, preacts, weights);
         }
 
     private:
-        using Neuron_itf = neuron::Interface<Float>;
-        using Neurons = std::list<typename Neuron_itf::Ptr>;
+        using Unit_itf = unit::Interface<Float>;
+        using Units = std::list<typename Unit_itf::Ptr>;
 
         template <typename Inputs, typename IX>
         bool add_neuron_(Transfer tf, const Inputs &inputs, IX *output, IX *weight)
         {
             MSS_BEGIN(bool);
-            neurons_.emplace_back(neuron::create<Float>(tf));
-            auto &ptr = neurons_.back();
-            MSS(!!ptr, neurons_.pop_back());
+            auto ptr = neuron::create<Float>(tf);
+            MSS(!!ptr);
+            units_.emplace_back(ptr);
             auto &n = *ptr;
             n.inputs.assign(RANGE(inputs));
             n.output = nr_states_++;
@@ -204,7 +251,7 @@ namespace gubg { namespace neural {
         size_t nr_states_ = 0;
         size_t nr_weights_ = 0;
 
-        Neurons neurons_;
+        Units units_;
     };
 
 } } 
