@@ -14,21 +14,15 @@ namespace  {
 
 TEST_CASE("neural::Network tests", "[ut][neural]")
 {
-    neural::Network<Float> nn(1);
+    neural::Network<Float> nn;
 
-    REQUIRE(nn.nr_inputs() == 1);
+    REQUIRE(nn.nr_states() == 0);
     REQUIRE(nn.nr_weights() == 0);
-    REQUIRE(nn.nr_postacts() == nn.nr_inputs()+2);
 
-    SECTION("forward without any neuron")
-    {
-        Vector weights(nn.nr_weights());
-        Vector postacts(nn.nr_postacts());
-        postacts[nn.input(0)] = 0.0;
-        nn.forward(postacts.data(), weights.data());
-    }
+    const auto input = nn.add_external(1);
+    const auto bias = nn.add_external(1);
 
-    const auto inputs = Inputs{nn.input(0), nn.bias()};
+    const auto inputs = Inputs{input, bias};
 
     SECTION("single neuron of each type")
     {
@@ -52,38 +46,40 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
         weights[sigmoid.weight_ix+1] = -10.0;
         weights[leakyrelu.weight_ix] = 1.0;
 
-        Vector postacts(nn.nr_postacts());
-        Vector postacts2(nn.nr_postacts());
-        Vector preacts(nn.nr_postacts());
+        Vector states(nn.nr_states());
+        states[bias] = 1.0;
+        Vector states2(nn.nr_states());
+        states2[bias] = 1.0;
+        Vector preacts(nn.nr_states());
 
         naft::Document naft(std::cout);
-        auto root = naft.node("tanh");
+        auto root = naft.node("nn");
         for (Float x = -2.0; x <= 2.0; x += 0.01)
         {
-            postacts[nn.input(0)] = x;
-            nn.forward(postacts.data(), preacts.data(), weights.data());
-            postacts2[nn.input(0)] = x;
-            nn.forward(postacts2.data(), weights.data());
+            states[input] = x;
+            nn.forward(states.data(), preacts.data(), weights.data());
+            states2[input] = x;
+            nn.forward(states2.data(), weights.data());
 
-            REQUIRE(postacts == postacts2);
+            REQUIRE(states == states2);
 
-            linear.output = postacts[linear.output_ix];
+            linear.output = states[linear.output_ix];
             REQUIRE(x == preacts[linear.output_ix]);
             REQUIRE(x == linear.output);
 
-            tanh.output = postacts[tanh.output_ix];
+            tanh.output = states[tanh.output_ix];
             REQUIRE((x < 0.0)  == (tanh.output < 0.0));
             REQUIRE((x == 0.0) == (tanh.output == 0.0));
             REQUIRE((x > 0.0)  == (tanh.output > 0.0));
             REQUIRE(x == preacts[tanh.output_ix]);
 
-            sigmoid.output = postacts[sigmoid.output_ix];
+            sigmoid.output = states[sigmoid.output_ix];
             REQUIRE((x < 1.0)  == (sigmoid.output < 0.5));
             REQUIRE((x == 1.0) == (sigmoid.output == 0.5));
             REQUIRE((x > 1.0)  == (sigmoid.output > 0.5));
             REQUIRE(preacts[sigmoid.output_ix] == Approx(x*10.0-10.0));
 
-            leakyrelu.output = postacts[leakyrelu.output_ix];
+            leakyrelu.output = states[leakyrelu.output_ix];
             REQUIRE(((x < 0.0 && x < leakyrelu.output) || (x >= 0.0 && x == leakyrelu.output)));
             REQUIRE(x == preacts[leakyrelu.output_ix]);
 
@@ -93,18 +89,18 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
 
     SECTION("many neurons in many layers")
     {
-        size_t input = 0;
+        size_t layer_input = input;
         auto add_layer = [&](int nr_input, int nr_output)
         {
             bool ok = true;
             Inputs inputs(nr_input+1);
-            std::iota(RANGE(inputs), input);
+            std::iota(RANGE(inputs), layer_input);
             for (unsigned int i = 0; i < nr_output; ++i)
             {
                 size_t output;
                 ok && (ok = nn.add_neuron(neural::Transfer::Tanh, inputs, output));
                 if (i == 0)
-                    input = output;
+                    layer_input = output;
             }
             return ok;
         };
@@ -115,19 +111,20 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
         for (auto i = 0; i < nr_layers; ++i)
             REQUIRE(add_layer(size, size));
 
-        std::cout << C(nn.nr_weights())C(nn.nr_postacts()) << std::endl;
+        std::cout << C(nn.nr_weights())C(nn.nr_states()) << std::endl;
         Vector weights(nn.nr_weights());
         std::fill(RANGE(weights), 0.001);
-        Vector postacts(nn.nr_postacts());
+        Vector states(nn.nr_states());
         const Float nan = 999.9;
-        std::fill(RANGE(postacts), nan);
+        std::fill(RANGE(states), nan);
+        states[bias] = 1.0;
 
-        postacts[nn.input(0)] = 1.0;
+        states[input] = 1.0;
         for (int i = 0; i < 10; ++i)
-            nn.forward(postacts.data(), weights.data());
-        REQUIRE(postacts[input] != nan);
+            nn.forward(states.data(), weights.data());
+        REQUIRE(states[layer_input] != nan);
         //The weights are chosen to not saturate with current layer size, nor cause 0-output
-        REQUIRE(0.0 < postacts[input]);
-        REQUIRE(postacts[input] < 1.0);
+        REQUIRE(0.0 < states[layer_input]);
+        REQUIRE(states[layer_input] < 1.0);
     }
 }

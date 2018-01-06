@@ -66,17 +66,17 @@ namespace gubg { namespace neural {
 
             virtual ~Interface() {}
 
-            virtual Float *forward(Float *postacts, const Float *weights) const = 0;
-            virtual Float *forward(Float *postacts, Float *preacts, const Float *weights) const = 0;
+            virtual Float *forward(Float *states, const Float *weights) const = 0;
+            virtual Float *forward(Float *states, Float *preacts, const Float *weights) const = 0;
 
         protected:
-            Float &preactivate_(Float *postacts, const Float *weights) const
+            Float &preactivate_(Float *states, const Float *weights) const
             {
-                auto &dst = postacts[output];
+                auto &dst = states[output];
                 dst = 0.0;
                 auto w = weights+weight;
                 for (auto src: inputs)
-                    dst += (*w++)*postacts[src];
+                    dst += (*w++)*states[src];
                 return dst;
             }
         };
@@ -87,15 +87,15 @@ namespace gubg { namespace neural {
         private:
             using Base = Interface<Float>;
         public:
-            Float *forward(Float *postacts, const Float *weights) const override
+            Float *forward(Float *states, const Float *weights) const override
             {
-                auto &dst = Base::preactivate_(postacts, weights);
+                auto &dst = Base::preactivate_(states, weights);
                 transfer_(dst);
                 return &dst;
             }
-            Float *forward(Float *postacts, Float *preacts, const Float *weights) const override
+            Float *forward(Float *states, Float *preacts, const Float *weights) const override
             {
-                auto &dst = Base::preactivate_(postacts, weights);
+                auto &dst = Base::preactivate_(states, weights);
                 preacts[Base::output] = dst;
                 transfer_(dst);
                 return &dst;
@@ -124,24 +124,18 @@ namespace gubg { namespace neural {
     class Network
     {
     public:
-        Network(size_t nr_inputs): nr_inputs_(nr_inputs)
+        size_t nr_states() const {return nr_states_;}
+        size_t nr_weights() const {return nr_weights_;}
+
+        size_t add_external(size_t size)
         {
-            nr_postacts_ = nr_inputs_;
-            nr_postacts_ += 1+1;
+            const auto ix = nr_states_;
+            nr_states_ += size;
+            return ix;
         }
 
-        size_t nr_inputs()  const {return nr_inputs_;}
-        size_t nr_weights() const {return nr_weights_;}
-        size_t nr_postacts() const {return nr_postacts_;}
-
-        size_t input(size_t offset) const {return 0+offset;}
-        //Input fixed at 1
-        size_t bias() const {return nr_inputs_;}
-        //Input fixed at 0: can be used to disable weights
-        size_t zero() const {return nr_inputs_+1;}
-
         //Optional arguments output and weight will provide info on where the neuron
-        //will store its output in the postacts array, and where the first weight starts
+        //will store its output in the states array, and where the first weight starts
         template <typename Inputs>
         bool add_neuron(Transfer tf, const Inputs &inputs) { return add_neuron_<Inputs, size_t>(tf, inputs, nullptr, nullptr); }
         template <typename Inputs, typename IX>
@@ -149,20 +143,16 @@ namespace gubg { namespace neural {
         template <typename Inputs, typename IX>
         bool add_neuron(Transfer tf, const Inputs &inputs, IX &output, IX &weight) { return add_neuron_<Inputs, IX>(tf, inputs, &output, &weight); }
 
-        //Expects input at start of postacts
-        void forward(Float *postacts, const Float *weights) const
+        //Expects input at start of states
+        void forward(Float *states, const Float *weights) const
         {
-            postacts[bias()] = 1.0;
-            postacts[zero()] = 0.0;
             for (const auto &neuron: neurons_)
-                neuron->forward(postacts, weights);
+                neuron->forward(states, weights);
         }
-        void forward(Float *postacts, Float *preacts, const Float *weights) const
+        void forward(Float *states, Float *preacts, const Float *weights) const
         {
-            postacts[bias()] = 1.0;
-            postacts[zero()] = 0.0;
             for (const auto &neuron: neurons_)
-                neuron->forward(postacts, preacts, weights);
+                neuron->forward(states, preacts, weights);
         }
 
     private:
@@ -178,7 +168,7 @@ namespace gubg { namespace neural {
             MSS(!!ptr, neurons_.pop_back());
             auto &n = *ptr;
             n.inputs.assign(RANGE(inputs));
-            n.output = nr_postacts_++;
+            n.output = nr_states_++;
             if (output)
                 *output = n.output;
             n.weight = nr_weights_;
@@ -188,9 +178,8 @@ namespace gubg { namespace neural {
             MSS_END();
         }
 
-        const size_t nr_inputs_;
+        size_t nr_states_ = 0;
         size_t nr_weights_ = 0;
-        size_t nr_postacts_;
 
         Neurons neurons_;
     };
