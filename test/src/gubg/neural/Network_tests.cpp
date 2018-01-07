@@ -177,10 +177,13 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
         nn.forward(states.data(), preacts.data(), weights.data());
 
         Vector derivative(nn.nr_states());
+        derivative[output] = 1.0;
         Vector gradient(nn.nr_weights());
-        nn.backward(output, derivative.data(), gradient.data(), states.data(), preacts.data(), weights.data());
+        nn.backward(derivative.data(), gradient.data(), states.data(), preacts.data(), weights.data());
 
         std::cout << C(gubg::hr(derivative)) << std::endl;
         std::cout << C(gubg::hr(gradient)) << std::endl;
+        REQUIRE((derivative == Vector{0.05, 0.15, 0.5}));
+        REQUIRE((gradient == Vector{1.0, 0.5}));
     }
 }

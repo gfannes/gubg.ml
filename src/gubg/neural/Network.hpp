@@ -204,7 +204,7 @@ namespace gubg { namespace neural {
                 auto g = gradient+weight_;
                 for (auto ix: inputs_)
                 {
-                    *g++ = src*states[ix];
+                    *g++ += src*states[ix];
                     derivative[ix] += src*(*w++);
                 }
             }
@@ -294,12 +294,10 @@ namespace gubg { namespace neural {
                 neuron->forward(states, preacts, weights);
         }
 
-        void backward(size_t output, Float *derivative, Float *gradient, const Float *states, const Float *preacts, const Float *weights)
+        //Caller has to setup derivative each time: filled with zeros, the output should contain the cost
+        //Gradient will be updated (+=), set it to 0 as appropriate
+        void backward(Float *derivative, Float *gradient, const Float *states, const Float *preacts, const Float *weights)
         {
-            std::fill(derivative, derivative+nr_states(), 0.0);
-            derivative[output] = 1.0;
-            std::fill(gradient, gradient+nr_weights(), 0.0);
-
             const auto end = units_.rend();
             for (auto it = units_.rbegin(); it != end; ++it)
                 (*it)->backward(derivative, gradient, states, preacts, weights);
