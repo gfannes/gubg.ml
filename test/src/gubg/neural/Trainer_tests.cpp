@@ -51,7 +51,7 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
 
     double ll = 0.0;
     Float step = 0.00015;
-    for (int i = 0; i < 1000; ++i)
+    for (int i = 0; i < 200; ++i)
     {
         double newll;
         REQUIRE(trainer.train(newll, weights.data(), 0.1, 10.0, step));
