@@ -56,9 +56,71 @@ namespace gubg { namespace neural {
         }
 
         template <typename LogProb>
-        bool train(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev, Float step)
+        bool train_sd(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev, Float step)
         {
             MSS_BEGIN(bool);
+
+            MSS(compute_gradient_(lp, weights, output_stddev, weights_stddev));
+
+            const auto nr_weights = nn_->nr_weights();
+            for (size_t i = 0; i < nr_weights; ++i)
+                weights[i] += step*gradient_[i];
+
+            MSS_END();
+        }
+
+        struct AdamParams
+        {
+            Float alpha = 0.001;
+            Float beta1 = 0.9;
+            Float beta2 = 0.999;
+            Float eps = 1.0e-8;
+        };
+        bool init_adam(const AdamParams &params = AdamParams{})
+        {
+            MSS_BEGIN(bool);
+            MSS(!!nn_);
+            MSS(adam_state_.init(params, nn_->nr_weights()));
+            MSS_END();
+        }
+        template <typename LogProb>
+        bool train_adam(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev)
+        {
+            MSS_BEGIN(bool);
+
+            MSS(adam_state_.valid());
+
+            ++adam_state_.t;
+
+            MSS(compute_gradient_(lp, weights, output_stddev, weights_stddev));
+
+            auto &m1 = adam_state_.m1;
+            auto &m2 = adam_state_.m2;
+            
+            m1.update_moment1(gradient_);
+            m2.update_moment2(gradient_);
+
+            const auto size = nn_->nr_weights();
+            const auto alpha = adam_state_.alpha;
+            for (size_t i = 0; i < size; ++i)
+                weights[i] += alpha*m1.corrected(i)/(std::sqrt(m2.corrected(i))+adam_state_.eps);
+
+            MSS_END();
+        }
+
+    private:
+        using IX = size_t;
+        using Vector = std::vector<Float>;
+        using Input = Vector;
+        using Target = Vector;
+        using IT = std::pair<Input, Target>;
+        using Data = std::list<IT>;
+
+        template <typename LogProb>
+        bool compute_gradient_(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev)
+        {
+            MSS_BEGIN(bool);
+
             MSS(!!nn_);
             MSS(data_.size() > 0);
             MSS(output_stddev > 0.0);
@@ -94,19 +156,11 @@ namespace gubg { namespace neural {
             for (size_t i = 0; i < nr_weights; ++i)
             {
                 lp -= weights[i]*weights[i]*weights_factor*0.5;
-                weights[i] += step*(gradient_[i]/data_.size() - weights[i]*weights_factor);
+                gradient_[i] = gradient_[i]/data_.size() - weights[i]*weights_factor;
             }
 
             MSS_END();
         }
-
-    private:
-        using IX = size_t;
-        using Vector = std::vector<Float>;
-        using Input = Vector;
-        using Target = Vector;
-        using IT = std::pair<Input, Target>;
-        using Data = std::list<IT>;
 
         const size_t input_size_;
         const size_t target_size_;
@@ -122,6 +176,65 @@ namespace gubg { namespace neural {
         Vector derivative_;
         Vector gradient_;
         std::map<IX, Float> fixed_inputs_;
+
+        struct AdamState
+        {
+            Float alpha;
+
+            struct Moment
+            {
+                Float beta, one_min_beta, beta_pow_t, inv_one_min_beta_pow_t;
+                Vector moment;
+                bool init(Float b, size_t nr_weights)
+                {
+                    MSS_BEGIN(bool);
+                    MSS(0.0 <= b && b < 1.0);
+                    beta = b; one_min_beta = 1.0-b; beta_pow_t = 1.0, inv_one_min_beta_pow_t = 0.0;
+                    moment.resize(nr_weights); std::fill(RANGE(moment), 0.0);
+                    MSS_END();
+                }
+                template <typename Gradient>
+                void update_moment1(const Gradient &gradient)
+                {
+                    for (size_t i = 0; i < gradient.size(); ++i)
+                        moment[i] = beta*moment[i] + one_min_beta*gradient[i];
+                    beta_pow_t *= beta;
+                    inv_one_min_beta_pow_t = 1.0/(1.0-beta_pow_t);
+                }
+                template <typename Gradient>
+                void update_moment2(const Gradient &gradient)
+                {
+                    for (size_t i = 0; i < gradient.size(); ++i)
+                        moment[i] = beta*moment[i] + one_min_beta*gradient[i]*gradient[i];
+                    beta_pow_t *= beta;
+                    inv_one_min_beta_pow_t = 1.0/(1.0-beta_pow_t);
+                }
+                Float corrected(size_t ix) const
+                {
+                    return moment[ix]*inv_one_min_beta_pow_t;
+                }
+            };
+            Moment m1;
+            Moment m2;
+
+            Float eps;
+
+
+            long t = -1;
+
+            bool valid() const { return t >= 0; }
+            bool init(const AdamParams &params, size_t nr_weights)
+            {
+                MSS_BEGIN(bool);
+                alpha = params.alpha;
+                MSS(m1.init(params.beta1, nr_weights));
+                MSS(m2.init(params.beta2, nr_weights));
+                eps = params.eps;
+                t = 0;
+                MSS_END();
+            }
+        };
+        AdamState adam_state_;
     };
 
 } } 
