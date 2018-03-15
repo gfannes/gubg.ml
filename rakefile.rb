@@ -1,6 +1,7 @@
-require(File.join(ENV['gubg'], 'shared'))
-require('gubg/build/Executable')
-require('gubg/build/Library')
+require_relative("../gubg.build/bootstrap.rb")
+require("gubg/shared")
+require("gubg/build/Executable")
+require("gubg/build/Library")
 include GUBG
 
 task :default => :help
