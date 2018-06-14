@@ -183,7 +183,7 @@ TEST_CASE("neural::Network tests", "[ut][neural]")
 
         std::cout << C(gubg::hr(derivative)) << std::endl;
         std::cout << C(gubg::hr(gradient)) << std::endl;
-        REQUIRE((derivative == Vector{0.05, 0.15, 0.5}));
-        REQUIRE((gradient == Vector{1.0, 0.5}));
+        REQUIRE((derivative == Vector{Float(0.05), Float(0.15), Float(0.5)}));
+        REQUIRE((gradient == Vector{Float(1.0), 0.5}));
     }
 }

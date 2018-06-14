@@ -28,7 +28,7 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
     Network nn;
     const auto input = nn.add_external(1);
     const auto bias = nn.add_external(1);
-    Vector layer_inputs = {input, bias};
+    Vector layer_inputs = {Float(input), bias};
     auto add_layer = [&](int nr){
         Vector layer_outputs;
         for (int i = 0; i < nr; ++i)
