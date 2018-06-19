@@ -13,8 +13,6 @@ class Tanh:
         return 1.0-x*x
 
 class Neuron:
-    transfer, inputs, output_ix, weight_ix = None, None, None, None
-
     def __init__(self, transfer, inputs, output_ix, weight_ix):
         self.transfer = transfer
         self.inputs = inputs

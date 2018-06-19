@@ -1,8 +1,9 @@
 from . import neuron
 
 class Simulator:
-    nr_states, nr_weights = 0, 0
-    _neurons = []
+    def __init__(self):
+        self.nr_states, self.nr_weights = 0, 0
+        self._neurons = []
 
     def add_external(self, nr):
         ix = self.nr_states
