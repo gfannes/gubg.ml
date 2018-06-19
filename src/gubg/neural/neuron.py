@@ -36,6 +36,6 @@ class Neuron:
             weight_ix += 1
         return v
 
-def create(kind, inputs, output_ix, weight_ix):
-    transfer = { "linear": Linear, "tanh": Tanh, }[kind]()
+def create(transfer, inputs, output_ix, weight_ix):
+    transfer = { "linear": Linear, "tanh": Tanh, }[transfer]()
     return Neuron(transfer, inputs, output_ix, weight_ix)

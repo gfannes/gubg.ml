@@ -10,10 +10,10 @@ class Simulator:
         self.nr_states += nr
         return ix
 
-    def add_neuron(self, kind, inputs):
+    def add_neuron(self, transfer, inputs):
         output_ix, weight_ix = self.nr_states, self.nr_weights
 
-        n = neuron.create(kind, inputs, output_ix, weight_ix)
+        n = neuron.create(transfer, inputs, output_ix, weight_ix)
         self._neurons.append(n)
 
         self.nr_states += 1
