@@ -240,6 +240,10 @@ namespace gubg { namespace neural {
     class Simulator
     {
     public:
+        using Self = Simulator<Float>;
+
+        void clear() {*this = Self();}
+
         size_t nr_states() const {return nr_states_;}
         size_t nr_weights() const {return nr_weights_;}
 

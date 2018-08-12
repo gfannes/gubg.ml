@@ -1,6 +1,8 @@
 #include "catch.hpp"
 #include "gubg/neural/Simulator.hpp"
 #include "gubg/naft/Document.hpp"
+#include "gubg/mlp/Structure.hpp"
+#include "gubg/mlp/Parameters.hpp"
 #include "gubg/hr.hpp"
 #include <vector>
 #include <iostream>
