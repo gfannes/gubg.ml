@@ -1,6 +1,7 @@
 #ifndef HEADER_gubg_neural_Network_hpp_ALREADY_INCLUDED
 #define HEADER_gubg_neural_Network_hpp_ALREADY_INCLUDED
 
+#include "gubg/neural/Types.hpp"
 #include "gubg/Tanh.hpp"
 #include "gubg/Sigmoid.hpp"
 #include "gubg/Range.hpp"
@@ -31,11 +32,6 @@ namespace gubg { namespace neural {
             virtual void backward(Float *derivative, Float *gradient, const Float *states, const Float *preacts, const Float *weights) const = 0;
         };
     } 
-
-    enum class Transfer
-    {
-        Linear, Tanh, Sigmoid, LeakyReLU, Quadratic,
-    };
 
     namespace transfer { 
         struct Identity
