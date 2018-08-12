@@ -27,14 +27,14 @@ namespace gubg { namespace mlp {
         unsigned int nr_inputs = 0;
         std::vector<Layer> layers;
 
-        void setup(const Structure &s);
+        void setup_from(const Structure &s);
 
         template <typename Writer> bool write(Writer &w) const;
         template <typename Reader> bool read(Reader &r);
     };
 
     //Parameters
-    inline void Parameters::setup(const Structure &s)
+    inline void Parameters::setup_from(const Structure &s)
     {
         nr_inputs = s.nr_inputs;
         auto local_nr_inputs = nr_inputs;

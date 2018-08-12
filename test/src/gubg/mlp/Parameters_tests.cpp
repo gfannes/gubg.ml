@@ -6,12 +6,12 @@ using namespace gubg;
 
 TEST_CASE("mlp::Parameters tests", "[ut][mlp][Parameters]")
 {
-    mlp::Structure mlp(2);
-    mlp.add_layer(neural::Transfer::Sigmoid, 5, 0.5, 3.0);
-    mlp.add_layer(neural::Transfer::Linear, 1, 0.5, 3.0);
+    mlp::Structure s(2);
+    s.add_layer(neural::Transfer::Sigmoid, 5, 0.5, 3.0);
+    s.add_layer(neural::Transfer::Linear, 1, 0.5, 3.0);
 
     mlp::Parameters params1;
-    params1.setup(mlp);
+    params1.setup_from(s);
 
     std::string str1;
     REQUIRE(s11n::write_object(str1, ":mlp.Parameters", params1));
