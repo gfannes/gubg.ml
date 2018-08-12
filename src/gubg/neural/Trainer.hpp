@@ -1,7 +1,7 @@
 #ifndef HEADER_gubg_neural_Trainer_hpp_ALREADY_INCLUDED
 #define HEADER_gubg_neural_Trainer_hpp_ALREADY_INCLUDED
 
-#include "gubg/neural/Network.hpp"
+#include "gubg/neural/Simulator.hpp"
 #include "gubg/Range.hpp"
 #include "gubg/mss.hpp"
 #include "gubg/hr.hpp"
@@ -15,7 +15,7 @@ namespace gubg { namespace neural {
     class Trainer
     {
     public:
-        using Network = neural::Network<Float>;
+        using Simulator = neural::Simulator<Float>;
 
         Trainer(size_t input_size, size_t target_size): input_size_(input_size), target_size_(target_size)
         {
@@ -36,17 +36,17 @@ namespace gubg { namespace neural {
             MSS_END();
         }
 
-        bool set(Network *nn, size_t input, size_t output)
+        bool set(Simulator *simulator, size_t input, size_t output)
         {
             MSS_BEGIN(bool);
-            MSS(!!nn);
-            nn_ = nn;
+            MSS(!!simulator);
+            simulator_ = simulator;
             input_ = input;
             output_ = output;
-            states_.resize(nn_->nr_states());
-            preacts_.resize(nn_->nr_states());
-            derivative_.resize(nn_->nr_states());
-            gradient_.resize(nn_->nr_weights());
+            states_.resize(simulator_->nr_states());
+            preacts_.resize(simulator_->nr_states());
+            derivative_.resize(simulator_->nr_states());
+            gradient_.resize(simulator_->nr_weights());
             fixed_inputs_.clear();
             MSS_END();
         }
@@ -62,7 +62,7 @@ namespace gubg { namespace neural {
 
             MSS(compute_gradient_(lp, weights, output_stddev, weights_stddev));
 
-            const auto nr_weights = nn_->nr_weights();
+            const auto nr_weights = simulator_->nr_weights();
             for (size_t i = 0; i < nr_weights; ++i)
                 weights[i] += step*gradient_[i];
 
@@ -79,8 +79,8 @@ namespace gubg { namespace neural {
         bool init_adam(const AdamParams &params = AdamParams{})
         {
             MSS_BEGIN(bool);
-            MSS(!!nn_);
-            MSS(adam_state_.init(params, nn_->nr_weights()));
+            MSS(!!simulator_);
+            MSS(adam_state_.init(params, simulator_->nr_weights()));
             MSS_END();
         }
         template <typename LogProb>
@@ -100,7 +100,7 @@ namespace gubg { namespace neural {
             m1.update_moment1(gradient_);
             m2.update_moment2(gradient_);
 
-            const auto size = nn_->nr_weights();
+            const auto size = simulator_->nr_weights();
             const auto alpha = adam_state_.alpha;
             for (size_t i = 0; i < size; ++i)
                 weights[i] += alpha*m1.corrected(i)/(std::sqrt(m2.corrected(i))+adam_state_.eps);
@@ -121,7 +121,7 @@ namespace gubg { namespace neural {
         {
             MSS_BEGIN(bool);
 
-            MSS(!!nn_);
+            MSS(!!simulator_);
             MSS(data_.size() > 0);
             MSS(output_stddev > 0.0);
             MSS(weights_stddev > 0.0);
@@ -136,7 +136,7 @@ namespace gubg { namespace neural {
             for (const auto &it: data_)
             {
                 std::copy(RANGE(it.first), &states_[input_]);
-                nn_->forward(states_.data(), preacts_.data(), weights);
+                simulator_->forward(states_.data(), preacts_.data(), weights);
                 Float ll = 0.0;
                 std::fill(RANGE(derivative_), 0.0);
                 for (size_t i = 0; i < target_size_; ++i)
@@ -145,13 +145,13 @@ namespace gubg { namespace neural {
                     derivative_[output_+i] = -diff*output_factor;
                     ll += diff*diff;
                 }
-                nn_->backward(derivative_.data(), gradient_.data(), states_.data(), preacts_.data(), weights);
+                simulator_->backward(derivative_.data(), gradient_.data(), states_.data(), preacts_.data(), weights);
                 lp += ll;
             }
             lp *= -output_factor*0.5;
             lp /= data_.size();
 
-            const auto nr_weights = nn_->nr_weights();
+            const auto nr_weights = simulator_->nr_weights();
             const Float weights_factor = 1.0/weights_stddev/weights_stddev;
             for (size_t i = 0; i < nr_weights; ++i)
             {
@@ -166,7 +166,7 @@ namespace gubg { namespace neural {
         const size_t target_size_;
         Data data_;
 
-        Network *nn_ = nullptr;
+        Simulator *simulator_ = nullptr;
         IX input_;
         IX output_;
         long bias_ = -1;

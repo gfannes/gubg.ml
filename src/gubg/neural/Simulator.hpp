@@ -1,5 +1,5 @@
-#ifndef HEADER_gubg_neural_Network_hpp_ALREADY_INCLUDED
-#define HEADER_gubg_neural_Network_hpp_ALREADY_INCLUDED
+#ifndef HEADER_gubg_neural_Simulator_hpp_ALREADY_INCLUDED
+#define HEADER_gubg_neural_Simulator_hpp_ALREADY_INCLUDED
 
 #include "gubg/neural/Types.hpp"
 #include "gubg/Tanh.hpp"
@@ -237,7 +237,7 @@ namespace gubg { namespace neural {
     } 
 
     template <typename Float>
-    class Network
+    class Simulator
     {
     public:
         size_t nr_states() const {return nr_states_;}

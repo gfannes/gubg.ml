@@ -9,7 +9,7 @@ using namespace gubg;
 
 namespace  { 
     using Float = float;
-    using Network = neural::Network<Float>;
+    using Simulator = neural::Simulator<Float>;
     using Trainer = neural::Trainer<Float>;
     using Vector = std::vector<Float>;
 } 
@@ -25,16 +25,16 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
     }
     REQUIRE(trainer.data_size() == 401);
 
-    Network nn;
-    const auto input = nn.add_external(1);
-    const auto bias = nn.add_external(1);
+    Simulator simulator;
+    const auto input = simulator.add_external(1);
+    const auto bias = simulator.add_external(1);
     Vector layer_inputs = {Float(input), bias};
     auto add_layer = [&](int nr){
         Vector layer_outputs;
         for (int i = 0; i < nr; ++i)
         {
             size_t output;
-            nn.add_neuron(neural::Transfer::Tanh, layer_inputs, output);
+            simulator.add_neuron(neural::Transfer::Tanh, layer_inputs, output);
             layer_outputs.push_back(output);
         }
         layer_inputs.swap(layer_outputs);
@@ -42,13 +42,13 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
     for (int i = 0; i < 2; ++i)
         add_layer(10);
     size_t output;
-    nn.add_neuron(neural::Transfer::Linear, layer_inputs, output);
+    simulator.add_neuron(neural::Transfer::Linear, layer_inputs, output);
 
     REQUIRE(!trainer.set(nullptr, input, output));
-    REQUIRE(trainer.set(&nn, input, output));
+    REQUIRE(trainer.set(&simulator, input, output));
     trainer.add_fixed_input(bias, 1.0);
 
-    Vector weights(nn.nr_weights());
+    Vector weights(simulator.nr_weights());
     std::mt19937 eng;
     std::normal_distribution<Float> normal{0.0, 0.1};
     std::generate(RANGE(weights), [&](){return normal(eng);});
@@ -75,12 +75,12 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
 
         if (true)
         {
-            Vector states(nn.nr_states());
+            Vector states(simulator.nr_states());
             states[bias] = 1.0;
             for (Float x = -2.0; x <= 2.0; x += 0.01)
             {
                 states[input] = x;
-                nn.forward(states.data(), weights.data());
+                simulator.forward(states.data(), weights.data());
                 const auto o = states[output];
                 root.node("point").attr("x",x).attr("t",std::sin(x)).attr("o",o);
             }
@@ -102,12 +102,12 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
 
         if (true)
         {
-            Vector states(nn.nr_states());
+            Vector states(simulator.nr_states());
             states[bias] = 1.0;
             for (Float x = -2.0; x <= 2.0; x += 0.01)
             {
                 states[input] = x;
-                nn.forward(states.data(), weights.data());
+                simulator.forward(states.data(), weights.data());
                 const auto o = states[output];
                 root.node("point").attr("x",x).attr("t",std::sin(x)).attr("o",o);
             }
