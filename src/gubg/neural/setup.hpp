@@ -80,6 +80,39 @@ namespace gubg { namespace neural {
         MSS_END();
     }
 
+    //params is expected to contain the correct structure, only the weights will be copied
+    template <typename Weights>
+    bool copy_weights(mlp::Parameters &params, const Weights &weights)
+    {
+        MSS_BEGIN(bool);
+
+        auto nr_left = weights.size();
+        auto ptr = weights.data();
+
+        //Bias comes after the inputs
+        auto bias = params.nr_inputs;
+
+        auto local_nr_inputs = params.nr_inputs;
+        for (auto &layer: params.layers)
+        {
+            for (auto &neuron: layer.neurons)
+            {
+                const auto nr_weights = neuron.weights.size();
+
+                MSS(nr_weights == local_nr_inputs);
+                MSS(nr_weights+1 <= nr_left);
+
+                std::copy(ptr, ptr+neuron.weights.size(), neuron.weights.data()); ptr += nr_weights;
+                neuron.bias = *ptr++;
+                nr_left -= nr_weights+1;
+            }
+            local_nr_inputs = layer.neurons.size();
+        }
+        MSS(nr_left == 0);
+
+        MSS_END();
+    }
+
 } } 
 
 #endif

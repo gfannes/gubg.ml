@@ -8,6 +8,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <optional>
 
 namespace gubg { namespace neural { 
 
@@ -56,11 +57,22 @@ namespace gubg { namespace neural {
         }
 
         template <typename LogProb>
-        bool train_sd(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev, Float step)
+        bool train_sd(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev, Float step, std::optional<Float> max_gradient_norm = std::nullopt)
         {
             MSS_BEGIN(bool);
 
             MSS(compute_gradient_(lp, weights, output_stddev, weights_stddev));
+
+            if (max_gradient_norm)
+            {
+                Float norm = 0.0;
+                for (auto g: gradient_)
+                    norm += g*g;
+                norm = std::sqrt(norm);
+                if (norm > *max_gradient_norm)
+                    for (auto &g: gradient_)
+                        g /= norm;
+            }
 
             const auto nr_weights = simulator_->nr_weights();
             for (size_t i = 0; i < nr_weights; ++i)
