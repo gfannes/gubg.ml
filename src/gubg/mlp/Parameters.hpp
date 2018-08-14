@@ -29,6 +29,8 @@ namespace gubg { namespace mlp {
 
         void setup_from(const Structure &s);
 
+        const Layer::Neuron &neuron(size_t lix, size_t nix) const {return layers[lix].neurons[nix];}
+
         template <typename Writer> bool write(Writer &w) const;
         template <typename Reader> bool read(Reader &r);
     };

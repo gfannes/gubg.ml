@@ -33,6 +33,10 @@ namespace gubg { namespace mlp {
         Structure() {}
         Structure(unsigned int nr_inputs): nr_inputs(nr_inputs) {}
 
+        unsigned int nr_outputs() const {return layers.back().neurons.size();}
+
+        const Layer::Neuron &neuron(size_t lix, size_t nix) const {return layers[lix].neurons[nix];}
+
         template <typename Ftor> void add_layer(Ftor &&ftor);
         void add_layer(neural::Transfer, unsigned int nr_neurons, double weight_stddev, double bias_stddev);
 
