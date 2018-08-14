@@ -279,7 +279,7 @@ namespace gubg { namespace neural {
                 quads[i] = out;
             }
             output = nr_states_++;
-            units_.emplace_back(new cost::Sum<Float>(quads, output, 1.0/stddev/stddev));
+            units_.emplace_back(new cost::Sum<Float>(quads, output, -1.0/stddev/stddev));
             MSS_END();
         }
 
