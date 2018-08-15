@@ -2,6 +2,7 @@
 #define HEADER_gubg_neural_Trainer_hpp_ALREADY_INCLUDED
 
 #include "gubg/neural/Simulator.hpp"
+#include "gubg/optimization/SCG.hpp"
 #include "gubg/Range.hpp"
 #include "gubg/mss.hpp"
 #include "gubg/hr.hpp"
@@ -9,6 +10,7 @@
 #include <list>
 #include <map>
 #include <optional>
+#include <numeric>
 
 namespace gubg { namespace neural { 
 
@@ -56,23 +58,14 @@ namespace gubg { namespace neural {
             fixed_inputs_[ix] = value;
         }
 
+        void set_max_gradient_norm(std::optional<Float> max_gradient_norm) { max_gradient_norm_ = max_gradient_norm; } 
+
         template <typename LogProb>
-        bool train_sd(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev, Float step, std::optional<Float> max_gradient_norm = std::nullopt)
+        bool train_sd(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev, Float step)
         {
             MSS_BEGIN(bool);
 
             MSS(compute_gradient_(lp, weights, output_stddev, weights_stddev));
-
-            if (max_gradient_norm)
-            {
-                Float norm = 0.0;
-                for (auto g: gradient_)
-                    norm += g*g;
-                norm = std::sqrt(norm);
-                if (norm > *max_gradient_norm)
-                    for (auto &g: gradient_)
-                        g /= norm;
-            }
 
             const auto nr_weights = simulator_->nr_weights();
             for (size_t i = 0; i < nr_weights; ++i)
@@ -120,6 +113,65 @@ namespace gubg { namespace neural {
             MSS_END();
         }
 
+        template <typename LogProb>
+        bool train_scg(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev, unsigned int nr_iterations)
+        {
+            MSS_BEGIN(bool);
+            using Weights = std::vector<Float>;
+            struct Params
+            {
+                using Type = Weights;
+                static Float sum_squares(const Weights &w)
+                {
+                    return std::accumulate(RANGE(w), 0.0, [](Float sum, Float v){return sum + v*v;});
+                }
+                static Float inprod(const Weights &a, const Weights &b)
+                {
+                    return std::inner_product(RANGE(a), b.begin(), 0.0);
+                }
+                static void update(Weights &dst, Float k, const Weights &src)
+                {
+                    auto it = src.begin();
+                    for (auto &w: dst)
+                        w += k*(*it++);
+                }
+                static unsigned int order(const Weights &w)
+                {
+                    return w.size();
+                }
+            };
+            struct Control
+            {
+                void scg_params(unsigned int iteration, Float lp, const Weights &w){}
+                bool scg_terminate(unsigned int iteration, Float lp, const Weights &g)
+                {
+                    S("");L(C(iteration)C(nr));
+                    return iteration+1 >= nr;
+                }
+                unsigned int nr;
+            };
+            Control control;
+            const auto nr_weights = simulator_->nr_weights();
+            control.nr = nr_iterations*nr_weights;
+            optimization::SCG<Float, Params, Control> scg(control);
+            auto function = [&](const Weights &w){
+                Float lp = 0.0;
+                compute_output_(lp, w.data(), output_stddev, weights_stddev);
+                return lp;
+            };
+            auto gradient = [&](Weights &g, const Weights &w){
+                Float lp = 0.0;
+                compute_gradient_(lp, w.data(), output_stddev, weights_stddev);
+                g = gradient_;
+            };
+
+            Weights w(nr_weights);
+            std::copy(weights, weights+nr_weights, w.data());
+            lp = scg(w, function, gradient);
+            std::copy(RANGE(w), weights);
+            MSS_END();
+        }
+
     private:
         using IX = size_t;
         using Vector = std::vector<Float>;
@@ -129,7 +181,46 @@ namespace gubg { namespace neural {
         using Data = std::list<IT>;
 
         template <typename LogProb>
-        bool compute_gradient_(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev)
+        bool compute_output_(LogProb &lp, const Float *weights, Float output_stddev, Float weights_stddev)
+        {
+            MSS_BEGIN(bool);
+
+            MSS(!!simulator_);
+            MSS(data_.size() > 0);
+            MSS(output_stddev > 0.0);
+            MSS(weights_stddev > 0.0);
+
+            const Float output_factor = 1.0/output_stddev/output_stddev;
+
+            for (const auto &p: fixed_inputs_)
+                states_[p.first] = p.second;
+
+            lp = 0.0;
+            for (const auto &it: data_)
+            {
+                std::copy(RANGE(it.first), &states_[input_]);
+                simulator_->forward(states_.data(), preacts_.data(), weights);
+                Float ll = 0.0;
+                for (size_t i = 0; i < target_size_; ++i)
+                {
+                    const Float diff = (states_[output_+i]-it.second[i]);
+                    ll += diff*diff;
+                }
+                lp += ll;
+            }
+            lp *= -output_factor*0.5;
+            lp /= data_.size();
+
+            const auto nr_weights = simulator_->nr_weights();
+            const Float weights_factor = 1.0/weights_stddev/weights_stddev;
+            for (size_t i = 0; i < nr_weights; ++i)
+                lp -= weights[i]*weights[i]*weights_factor*0.5;
+
+            MSS_END();
+        }
+
+        template <typename LogProb>
+        bool compute_gradient_(LogProb &lp, const Float *weights, Float output_stddev, Float weights_stddev)
         {
             MSS_BEGIN(bool);
 
@@ -171,6 +262,19 @@ namespace gubg { namespace neural {
                 gradient_[i] = gradient_[i]/data_.size() - weights[i]*weights_factor;
             }
 
+            //Rescale the gradient to max_gradient_norm_ when such a maximum
+            //is given and the current gradient is too large
+            if (max_gradient_norm_)
+            {
+                Float norm = 0.0;
+                for (auto g: gradient_)
+                    norm += g*g;
+                norm = std::sqrt(norm);
+                if (norm > *max_gradient_norm_)
+                    for (auto &g: gradient_)
+                        g /= norm;
+            }
+
             MSS_END();
         }
 
@@ -188,6 +292,7 @@ namespace gubg { namespace neural {
         Vector derivative_;
         Vector gradient_;
         std::map<IX, Float> fixed_inputs_;
+        std::optional<Float> max_gradient_norm_;
 
         struct AdamState
         {

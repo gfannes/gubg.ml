@@ -6,6 +6,7 @@
 #include "gubg/mss.hpp"
 #include <vector>
 #include <cassert>
+#include <ostream>
 
 namespace gubg { namespace ml { 
 
@@ -67,6 +68,11 @@ namespace gubg { namespace ml {
                 add_layer(nr_outputs);
             }
         };
+        template <typename Float>
+        std::ostream &operator<<(std::ostream &os, const Params<Float> &params)
+        {
+            return os;
+        }
 
         template <typename Float>
         class Model

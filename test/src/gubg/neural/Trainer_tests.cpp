@@ -16,8 +16,10 @@ namespace  {
 
 TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
 {
+    //Create the trainer, ready to train a network with 1 input and 1 output
     Trainer trainer(1,1);
 
+    //Add the training data: sine data
     for (Float x = -2.0; x <= 2.0; x += 0.01)
     {
         REQUIRE(!trainer.add(Vector{x,x}, Vector()));
@@ -25,6 +27,7 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
     }
     REQUIRE(trainer.data_size() == 401);
 
+    //Create the neural::Simulator
     Simulator simulator;
     const auto input = simulator.add_external(1);
     const auto bias = simulator.add_external(1);
@@ -39,15 +42,25 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
         }
         layer_inputs.swap(layer_outputs);
     };
+#if 1
+    //2 hidden layers with 10 tanh neurouns
+    //1 linear output neuron
     for (int i = 0; i < 2; ++i)
         add_layer(10);
     size_t output;
     simulator.add_neuron(neural::Transfer::Linear, layer_inputs, output);
+#else
+    //1 tanh neuron
+    size_t output;
+    simulator.add_neuron(neural::Transfer::Tanh, layer_inputs, output);
+#endif
 
+    //Inject this neural::Simulator into the trainer
     REQUIRE(!trainer.set(nullptr, input, output));
     REQUIRE(trainer.set(&simulator, input, output));
     trainer.add_fixed_input(bias, 1.0);
 
+    //Generate randomized weights
     Vector weights(simulator.nr_weights());
     std::mt19937 eng;
     std::normal_distribution<Float> normal{0.0, 0.1};
@@ -101,6 +114,29 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
         }
 
         if (true)
+        {
+            Vector states(simulator.nr_states());
+            states[bias] = 1.0;
+            for (Float x = -2.0; x <= 2.0; x += 0.01)
+            {
+                states[input] = x;
+                simulator.forward(states.data(), weights.data());
+                const auto o = states[output];
+                root.node("point").attr("x",x).attr("t",std::sin(x)).attr("o",o);
+            }
+        }
+    }
+    SECTION("scg")
+    {
+        auto root = doc.node("scg");
+        double lp = 0.0;
+        for (int i = 0; i < 1; ++i)
+        {
+            REQUIRE(trainer.train_scg(lp, weights.data(), output_stddev, weights_stddev, 10));
+            root.node("train").attr("lp",lp);
+        }
+
+        if (false)
         {
             Vector states(simulator.nr_states());
             states[bias] = 1.0;
