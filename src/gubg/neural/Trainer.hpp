@@ -113,47 +113,17 @@ namespace gubg { namespace neural {
             MSS_END();
         }
 
+        void init_scg()
+        {
+            scg_.clear();
+        }
         template <typename LogProb>
         bool train_scg(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev, unsigned int nr_iterations)
         {
             MSS_BEGIN(bool);
-            using Weights = std::vector<Float>;
-            struct Params
-            {
-                using Type = Weights;
-                static Float sum_squares(const Weights &w)
-                {
-                    return std::accumulate(RANGE(w), 0.0, [](Float sum, Float v){return sum + v*v;});
-                }
-                static Float inprod(const Weights &a, const Weights &b)
-                {
-                    return std::inner_product(RANGE(a), b.begin(), 0.0);
-                }
-                static void update(Weights &dst, Float k, const Weights &src)
-                {
-                    auto it = src.begin();
-                    for (auto &w: dst)
-                        w += k*(*it++);
-                }
-                static unsigned int order(const Weights &w)
-                {
-                    return w.size();
-                }
-            };
-            struct Control
-            {
-                void scg_params(unsigned int iteration, Float lp, const Weights &w){}
-                bool scg_terminate(unsigned int iteration, Float lp, const Weights &g)
-                {
-                    S("");L(C(iteration)C(nr));
-                    return iteration+1 >= nr;
-                }
-                unsigned int nr;
-            };
-            Control control;
-            const auto nr_weights = simulator_->nr_weights();
-            control.nr = nr_iterations*nr_weights;
-            optimization::SCG<Float, Params, Control> scg(control);
+
+            control_.nr = nr_iterations;
+
             auto function = [&](const Weights &w){
                 Float lp = 0.0;
                 compute_output_(lp, w.data(), output_stddev, weights_stddev);
@@ -165,10 +135,14 @@ namespace gubg { namespace neural {
                 g = gradient_;
             };
 
+            const auto nr_weights = simulator_->nr_weights();
             Weights w(nr_weights);
             std::copy(weights, weights+nr_weights, w.data());
-            lp = scg(w, function, gradient);
+
+            lp = scg_(w, function, gradient);
+
             std::copy(RANGE(w), weights);
+
             MSS_END();
         }
 
@@ -352,6 +326,41 @@ namespace gubg { namespace neural {
             }
         };
         AdamState adam_state_;
+
+        using Weights = std::vector<Float>;
+        struct Params
+        {
+            using Type = Weights;
+            static Float sum_squares(const Weights &w)
+            {
+                return std::accumulate(RANGE(w), 0.0, [](Float sum, Float v){return sum + v*v;});
+            }
+            static Float inprod(const Weights &a, const Weights &b)
+            {
+                return std::inner_product(RANGE(a), b.begin(), 0.0);
+            }
+            static void update(Weights &dst, Float k, const Weights &src)
+            {
+                auto it = src.begin();
+                for (auto &w: dst)
+                    w += k*(*it++);
+            }
+            static unsigned int order(const Weights &w)
+            {
+                return w.size();
+            }
+        };
+        struct Control
+        {
+            void scg_params(unsigned int iteration, Float lp, const Weights &w){}
+            bool scg_terminate(unsigned int iteration, Float lp, const Weights &g)
+            {
+                return iteration+1 >= nr;
+            }
+            unsigned int nr = 1;
+        };
+        Control control_;
+        optimization::SCG<Float, Params, Control> scg_{control_};
     };
 
 } } 

@@ -86,7 +86,7 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
             root.node("train").attr("lp",lp).attr("step",step);
         }
 
-        if (true)
+        if (false)
         {
             Vector states(simulator.nr_states());
             states[bias] = 1.0;
@@ -113,7 +113,7 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
             root.node("train").attr("lp",lp);
         }
 
-        if (true)
+        if (false)
         {
             Vector states(simulator.nr_states());
             states[bias] = 1.0;
@@ -130,9 +130,9 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
     {
         auto root = doc.node("scg");
         double lp = 0.0;
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < nr_steps; ++i)
         {
-            REQUIRE(trainer.train_scg(lp, weights.data(), output_stddev, weights_stddev, 10));
+            REQUIRE(trainer.train_scg(lp, weights.data(), output_stddev, weights_stddev, 1));
             root.node("train").attr("lp",lp);
         }
 
