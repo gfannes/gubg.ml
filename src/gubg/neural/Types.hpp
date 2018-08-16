@@ -8,7 +8,7 @@ namespace gubg { namespace neural {
 
     enum class Transfer
     {
-        Linear, Tanh, Sigmoid, LeakyReLU, Quadratic,
+        Linear, Tanh, Sigmoid, LeakyReLU, SoftPlus, Quadratic,
     };
 
     inline const char *to_str(Transfer transfer)
@@ -20,6 +20,7 @@ namespace gubg { namespace neural {
             L_CASE(Tanh);
             L_CASE(Sigmoid);
             L_CASE(LeakyReLU);
+            L_CASE(SoftPlus);
             L_CASE(Quadratic);
 #undef L_CASE
             default: break;
@@ -35,6 +36,7 @@ namespace gubg { namespace neural {
         L_ELSE_IF(Tanh)
         L_ELSE_IF(Sigmoid)
         L_ELSE_IF(LeakyReLU)
+        L_ELSE_IF(SoftPlus)
         L_ELSE_IF(Quadratic)
 #undef L_ELSE_IF
         else {MSS(false);}

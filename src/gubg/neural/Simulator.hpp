@@ -83,6 +83,13 @@ namespace gubg { namespace neural {
                 return 1.0;
             }
         };
+        struct SoftPlus
+        {
+            template <typename Float>
+            void operator()(Float &v) const {v = std::log(1.0+std::exp(v));}
+            template <typename Float>
+            Float derivative(Float x) const { return 1.0/(1.0+std::exp(-x)); }
+        };
         struct Quadratic
         {
             template <typename Float>
@@ -230,6 +237,7 @@ namespace gubg { namespace neural {
                 case Transfer::Tanh:      return new Neuron<Float, transfer::Tanh>(inputs, output, weight);
                 case Transfer::Sigmoid:   return new Neuron<Float, transfer::Sigmoid>(inputs, output, weight);
                 case Transfer::LeakyReLU: return new Neuron<Float, transfer::LeakyReLU>(inputs, output, weight);
+                case Transfer::SoftPlus:  return new Neuron<Float, transfer::SoftPlus>(inputs, output, weight);
                 case Transfer::Quadratic: return new Neuron<Float, transfer::Quadratic>(inputs, output, weight);
             }
             return nullptr;
