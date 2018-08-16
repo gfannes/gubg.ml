@@ -169,7 +169,7 @@ namespace gubg { namespace neural {
             for (const auto &p: fixed_inputs_)
                 states_[p.first] = p.second;
 
-            lp = 0.0;
+            Float lp_data = 0.0;
             for (const auto &it: data_)
             {
                 std::copy(RANGE(it.first), &states_[input_]);
@@ -180,15 +180,19 @@ namespace gubg { namespace neural {
                     const Float diff = (states_[output_+i]-it.second[i]);
                     ll += diff*diff;
                 }
-                lp += ll;
+                lp_data += ll;
             }
-            lp *= -output_factor*0.5;
-            lp /= data_.size();
+            lp_data *= -output_factor*0.5;
+            lp_data /= data_.size();
 
+            Float lp_weights = 0.0;
             const auto nr_weights = simulator_->nr_weights();
             const Float weights_factor = 1.0/weights_stddev/weights_stddev;
             for (size_t i = 0; i < nr_weights; ++i)
-                lp -= weights[i]*weights[i]*weights_factor*0.5;
+                lp_weights -= weights[i]*weights[i]*weights_factor*0.5;
+            lp_weights /= nr_weights;
+
+            lp = lp_data + lp_weights;
 
             MSS_END();
         }
@@ -208,7 +212,7 @@ namespace gubg { namespace neural {
             for (const auto &p: fixed_inputs_)
                 states_[p.first] = p.second;
 
-            lp = 0.0;
+            Float lp_data = 0.0;
             std::fill(RANGE(gradient_), 0.0);
             for (const auto &it: data_)
             {
@@ -223,18 +227,21 @@ namespace gubg { namespace neural {
                     ll += diff*diff;
                 }
                 simulator_->backward(derivative_.data(), gradient_.data(), states_.data(), preacts_.data(), weights);
-                lp += ll;
+                lp_data += ll;
             }
-            lp *= -output_factor*0.5;
-            lp /= data_.size();
+            lp_data *= -output_factor*0.5;
+            lp_data /= data_.size();
 
+            Float lp_weights = 0.0;
             const auto nr_weights = simulator_->nr_weights();
-            const Float weights_factor = 1.0/weights_stddev/weights_stddev;
+            const Float weights_factor = 1.0/weights_stddev/weights_stddev/nr_weights;
             for (size_t i = 0; i < nr_weights; ++i)
             {
-                lp -= weights[i]*weights[i]*weights_factor*0.5;
+                lp_weights -= weights[i]*weights[i]*weights_factor*0.5;
                 gradient_[i] = gradient_[i]/data_.size() - weights[i]*weights_factor;
             }
+
+            lp = lp_data + lp_weights;
 
             //Rescale the gradient to max_gradient_norm_ when such a maximum
             //is given and the current gradient is too large
