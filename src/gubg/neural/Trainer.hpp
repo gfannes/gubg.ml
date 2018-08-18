@@ -11,8 +11,18 @@
 #include <map>
 #include <optional>
 #include <numeric>
+#include <random>
 
 namespace gubg { namespace neural { 
+
+    namespace details {
+        inline std::mt19937 &rng()
+        {
+            static std::mt19937 rng_s;
+            return rng_s;
+        }
+    }
+
 
     template <typename Float>
     class Trainer
@@ -142,6 +152,52 @@ namespace gubg { namespace neural {
             lp = scg_(w, function, gradient);
 
             std::copy(RANGE(w), weights);
+
+            MSS_END();
+        }
+
+        template <typename LogProb>
+        bool train_metropolis(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev, Float motion_stddev, unsigned int nr_iterations)
+        {
+            MSS_BEGIN(bool);
+
+            const auto nr_weights = simulator_->nr_weights();
+
+            std::vector<Float> current(weights, weights+nr_weights);
+            std::vector<Float> updated;
+
+            Float lp_current, lp_updated;
+            compute_output_(lp_current, current.data(), output_stddev, weights_stddev);
+
+            std::normal_distribution<> normal(0.0, motion_stddev);
+            std::uniform_real_distribution<> uniform(0.0, 1.0);
+
+            for (auto i = 0u; i < nr_iterations; ++i)
+            {
+                updated = current;
+                for (auto &w: updated)
+                    w += normal(details::rng());
+
+                compute_output_(lp_updated, updated.data(), output_stddev, weights_stddev);
+
+                if (lp_updated >= lp_current)
+                {
+                    lp_current = lp_updated;
+                    current = updated;
+                }
+                else
+                {
+                    const auto accept_prob = std::exp(lp_updated - lp_current);
+                    if (accept_prob >= uniform(details::rng()))
+                    {
+                        lp_current = lp_updated;
+                        current = updated;
+                    }
+                }
+            }
+
+            std::copy(RANGE(current), weights);
+            lp = lp_current;
 
             MSS_END();
         }
