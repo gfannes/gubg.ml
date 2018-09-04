@@ -157,7 +157,7 @@ TEST_CASE("neural::Simulator tests", "[ut][neural][Simulator]")
         states[output] = 3.0;
 
         simulator.forward(states.data(), nullptr);
-        REQUIRE(states[ll] == 200);
+        REQUIRE(states[ll] == -200);
 
         std::cout << C(states[ll]) << std::endl;
     }
