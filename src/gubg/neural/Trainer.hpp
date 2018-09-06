@@ -23,7 +23,6 @@ namespace gubg { namespace neural {
         }
     }
 
-
     template <typename Float>
     class Trainer
     {
@@ -111,7 +110,7 @@ namespace gubg { namespace neural {
 
             auto &m1 = adam_state_.m1;
             auto &m2 = adam_state_.m2;
-            
+
             m1.update_moment1(gradient_);
             m2.update_moment2(gradient_);
 
@@ -155,49 +154,51 @@ namespace gubg { namespace neural {
 
             MSS_END();
         }
-
         template <typename LogProb>
         bool train_metropolis(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev, Float motion_stddev, unsigned int nr_iterations)
         {
             MSS_BEGIN(bool);
 
-            const auto nr_weights = simulator_->nr_weights();
-
-            std::vector<Float> current(weights, weights+nr_weights);
-            std::vector<Float> updated;
-
-            Float lp_current, lp_updated;
-            compute_output_(lp_current, current.data(), output_stddev, weights_stddev);
-
+            auto &rng = details::rng();
             std::normal_distribution<> normal(0.0, motion_stddev);
             std::uniform_real_distribution<> uniform(0.0, 1.0);
 
+            Float current_lp, new_lp;
+            MSS(compute_output_(current_lp, weights, output_stddev, weights_stddev));
+
+            const auto nr_weights = simulator_->nr_weights();
+            current_weights_.resize(nr_weights);
+            new_weights_.resize(nr_weights);
+            std::copy(weights, weights+nr_weights, current_weights_.data());
+
             for (auto i = 0u; i < nr_iterations; ++i)
             {
-                updated = current;
-                for (auto &w: updated)
-                    w += normal(details::rng());
-
-                compute_output_(lp_updated, updated.data(), output_stddev, weights_stddev);
-
-                if (lp_updated >= lp_current)
+                new_weights_ = current_weights_;
+                for (auto &w: new_weights_)
+                    w += normal(rng);
+                MSS(compute_output_(new_lp, new_weights_.data(), output_stddev, weights_stddev));
+                if (new_lp >= current_lp)
                 {
-                    lp_current = lp_updated;
-                    current = updated;
+                    //Better logprob: always accepted
+                    new_weights_.swap(current_weights_);
+                    current_lp = new_lp;
                 }
                 else
                 {
-                    const auto accept_prob = std::exp(lp_updated - lp_current);
-                    if (accept_prob >= uniform(details::rng()))
+                    //Worste logprob: we only accept by chance
+                    const auto accept_prob = std::exp(new_lp - current_lp);
+                    const auto rng_v = uniform(rng);
+                    if (accept_prob > rng_v)
                     {
-                        lp_current = lp_updated;
-                        current = updated;
+                        new_weights_.swap(current_weights_);
+                        current_lp = new_lp;
                     }
                 }
+
             }
 
-            std::copy(RANGE(current), weights);
-            lp = lp_current;
+            std::copy(RANGE(current_weights_), weights);
+            lp = current_lp;
 
             MSS_END();
         }
@@ -424,6 +425,9 @@ namespace gubg { namespace neural {
         };
         Control control_;
         optimization::SCG<Float, Params, Control> scg_{control_};
+
+        //For Metropolis
+        std::vector<Float> current_weights_, new_weights_;
     };
 
 } } 
