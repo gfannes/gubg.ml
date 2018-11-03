@@ -308,6 +308,7 @@ namespace gubg { namespace neural {
                 for (auto g: gradient_)
                     norm += g*g;
                 norm = std::sqrt(norm);
+                /* std::cout << "Gradient norm: " << norm << std::endl; */
                 if (norm > *max_gradient_norm_)
                     for (auto &g: gradient_)
                         g /= norm;
