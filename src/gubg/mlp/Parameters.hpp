@@ -32,6 +32,20 @@ namespace gubg { namespace mlp {
         const Layer::Neuron &neuron(size_t lix, size_t nix) const {return layers[lix].neurons[nix];}
         Layer::Neuron &neuron(size_t lix, size_t nix) {return layers[lix].neurons[nix];}
 
+        template <typename Ftor>
+        void each_neuron(Ftor &&ftor)
+        {
+            for (auto lix = 0u; lix < layers.size(); ++lix)
+            {
+                auto &layer = layers[lix];
+                for (auto nix = 0u; nix < layer.neurons.size(); ++nix)
+                {
+                    auto &neuron = layer.neurons[nix];
+                    ftor(neuron, lix, nix);
+                }
+            }
+        }
+
         template <typename Writer> bool write(Writer &w) const;
         template <typename Reader> bool read(Reader &r);
     };
