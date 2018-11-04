@@ -45,6 +45,19 @@ namespace gubg { namespace mlp {
                 }
             }
         }
+        template <typename Ftor>
+        void each_neuron(Ftor &&ftor) const
+        {
+            for (auto lix = 0u; lix < layers.size(); ++lix)
+            {
+                const auto &layer = layers[lix];
+                for (auto nix = 0u; nix < layer.neurons.size(); ++nix)
+                {
+                    const auto &neuron = layer.neurons[nix];
+                    ftor(neuron, lix, nix);
+                }
+            }
+        }
 
         template <typename Writer> bool write(Writer &w) const;
         template <typename Reader> bool read(Reader &r);
