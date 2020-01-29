@@ -87,7 +87,8 @@ TEST_CASE("ml::sgd::Optimize for biquad tests", "[ut][ml][sgd][Optimize][biquad]
         process();
         const auto ampl = process();
         /* std::cout << resp.freq << " " << resp.ampl << " " << ampl << std::endl; */
-        return std::abs(ampl-resp.ampl);
+        const auto diff = ampl-resp.ampl;
+        return diff*diff;
     };
     auto avg = [&](const auto &vec)
     {
@@ -148,7 +149,7 @@ TEST_CASE("ml::sgd::Optimize for biquad tests", "[ut][ml][sgd][Optimize][biquad]
     for (auto ix = 0u; ix < 10; ++ix)
     {
         std::cout << gubg::hr(vec) << avg(vec) << std::endl;
-        break;
+        /* break; */
         REQUIRE(optimize.update_nesterov(vec, g));
     }
 }
