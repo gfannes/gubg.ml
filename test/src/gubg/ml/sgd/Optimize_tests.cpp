@@ -53,7 +53,8 @@ TEST_CASE("ml::sgd::Optimize for biquad tests", "[ut][ml][sgd][Optimize][biquad]
     };
     using Biquad = gubg::biquad::Filter<double>;
     const double samplerate = 48000.0;
-    gubg::wav::Writer ww("bq.wav", 1, samplerate);
+    gubg::wav::Writer ww;
+    ww.open("bq.wav", 1, 1, samplerate);
     auto f = [&](const auto &vec, const Response &resp)
     {
         Biquad::Coefficients coeffs;
@@ -75,10 +76,10 @@ TEST_CASE("ml::sgd::Optimize for biquad tests", "[ut][ml][sgd][Optimize][biquad]
             double ampl = 0.0;
             for (auto ix = 0u; ix < samplerate; ++ix, time += dT)
             {
-                double v = std::sin(gubg::math::tau*resp.freq*time);
-                v = bq(v);
-                ww.add_value(v/2.0);
-                ampl = std::max(ampl, std::abs(v));
+                float v = std::sin(gubg::math::tau*resp.freq*time);
+                v = bq(v)/2.0;
+                ww.write_mono(&v);
+                ampl = std::max<float>(ampl, std::abs(v));
                 if (ampl >= 10.0)
                     return 10.0;
             }
