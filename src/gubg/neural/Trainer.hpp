@@ -3,6 +3,7 @@
 
 #include "gubg/neural/Simulator.hpp"
 #include "gubg/optimization/SCG.hpp"
+#include <gubg/ml/fwd/Minimizer.hpp>
 #include "gubg/Range.hpp"
 #include "gubg/mss.hpp"
 #include "gubg/hr.hpp"
@@ -79,6 +80,30 @@ namespace gubg { namespace neural {
             const auto nr_weights = simulator_->nr_weights();
             for (size_t i = 0; i < nr_weights; ++i)
                 weights[i] += step*gradient_[i];
+
+            MSS_END();
+        }
+
+        template <typename LogProb, typename Step>
+        bool train_fwd(LogProb &lp, Float *weights, Float output_stddev, Float weights_stddev, Step &step)
+        {
+            MSS_BEGIN(bool);
+
+            forward_descent_.learning_rate = step;
+
+            const auto size = simulator_->nr_weights();
+
+            auto compute_gradient = [&](auto &grad){
+                MSS_BEGIN(bool);
+                MSS(compute_gradient_(lp, weights, output_stddev, weights_stddev));
+                for (auto ix = 0u; ix < size; ++ix)
+                    grad[ix] = -gradient_[ix];
+                MSS_END();
+            };
+            auto weights_range = gubg::make_range(weights, size);
+            MSS(forward_descent_.update(weights_range, compute_gradient));
+
+            step = forward_descent_.learning_rate;
 
             MSS_END();
         }
@@ -429,6 +454,8 @@ namespace gubg { namespace neural {
 
         //For Metropolis
         std::vector<Float> current_weights_, new_weights_;
+
+        gubg::ml::fwd::Minimizer<Float> forward_descent_;
     };
 
 } } 
