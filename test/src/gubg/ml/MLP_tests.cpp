@@ -1,6 +1,6 @@
 #include "catch.hpp"
 #include "gubg/ml/MLP.hpp"
-#include "gubg/ml/Cost.hpp"
+#include "gubg/ml/cost/Total.hpp"
 #include "gubg/optimization/SCG.hpp"
 #include <cmath>
 using namespace gubg;
@@ -142,15 +142,15 @@ TEST_CASE("gubg::ml::MLP tests", "[ut][ml][MLP]")
                 MSS_END();
             }
         };
-        ml::Cost<Input, Output, MeanModel, CostFunction> cost;
-        cost.mean_model.params = &params;
+        ml::cost::Total<Input, Output, MeanModel, CostFunction> total_cost;
+        total_cost.predictor.params = &params;
         for (double t = 0.0; t < 12.0; t += 0.1)
         {
-            cost.inputs.push_back({t});
-            cost.outputs.push_back({0.8*std::sin(t)});
+            total_cost.inputs.push_back({t});
+            total_cost.outputs.push_back({0.8*std::sin(t)});
         }
         double c;
-        REQUIRE(cost(c));
+        REQUIRE(total_cost(c));
         std::cout << C(c) << std::endl;
 
         Outer outer;
@@ -159,24 +159,24 @@ TEST_CASE("gubg::ml::MLP tests", "[ut][ml][MLP]")
         auto function = [&](const Params &params)
         {
             Float c;
-            cost.mean_model.params = &params;
-            cost(c);
+            total_cost.predictor.params = &params;
+            total_cost(c);
             return c;
         };
         auto gradient = [&](Params &grad, const Params &params)
         {
             S("");
-            cost.mean_model.params = &params;
+            total_cost.predictor.params = &params;
             ParamsInfo::fill(grad, 0.0);
             Params tmp = grad;
-            assert(cost.inputs.size() == cost.outputs.size());
-            const auto nr = cost.inputs.size();
+            assert(total_cost.inputs.size() == total_cost.outputs.size());
+            const auto nr = total_cost.inputs.size();
             assert(nr > 0);
-            Output mean = cost.outputs[0];
+            Output mean = total_cost.outputs[0];
             for (size_t i = 0; i < nr; ++i)
             {
-                cost.mean_model.model.gradient(tmp, mean, cost.inputs[i], *cost.mean_model.params);
-                ParamsInfo::update(grad, 2.0*(mean[0]-cost.outputs[i][0]), tmp);
+                total_cost.predictor.model.gradient(tmp, mean, total_cost.inputs[i], *total_cost.predictor.params);
+                ParamsInfo::update(grad, 2.0*(mean[0]-total_cost.outputs[i][0]), tmp);
             }
         };
         const auto new_c = scg(params, function, gradient);

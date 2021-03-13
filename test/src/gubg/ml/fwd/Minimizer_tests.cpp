@@ -24,7 +24,7 @@ TEST_CASE("Gradient Descent tests", "[ut][ml][fwd][Minimizer]")
     {
         std::cout << C(ix) << gubg::hr(pos) << std::endl;
         fo << pos[0] << '\t' << pos[1]+ix*0.001 << std::endl;
-        auto gradient = [&](auto &grad, const auto &pos){
+        auto gradient = [&](auto &grad){
             ++count;
             return rb.gradient(grad, pos);
         };
