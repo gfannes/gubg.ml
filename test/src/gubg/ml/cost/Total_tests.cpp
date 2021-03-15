@@ -12,15 +12,20 @@ TEST_CASE("ml::cost::Total tests", "[ut][ml][cost][Total]")
     using T = double;
     using Vec = std::vector<T>;
 
+    cost::Total<T, T> total_cost;
+    total_cost.inputs = {0, 8,9,10,11,12, 400};
+    total_cost.outputs = total_cost.inputs;
+
     cost::bitsize::Entropy<T> entropy;
-    entropy.overhead = 2.0;
+    entropy.minimum_diff = 0.1;
+    entropy.overhead = 0.5;
     entropy.pow = 0.5;
     auto entropy_cost = [&](auto &c, const auto &p, const auto &o){
         c = entropy(p, o);
         return true;
     };
 
-    cost::bitsize::OutOfRange<T> oor{15, 64};
+    cost::bitsize::OutOfRange<T> oor{2.1, total_cost.inputs.back()};
     auto oor_cost = [&](auto &c, const auto &p, const auto &o){
         c = oor(p, o);
         return true;
@@ -33,12 +38,8 @@ TEST_CASE("ml::cost::Total tests", "[ut][ml][cost][Total]")
         return true;
     };
 
-    cost::Total<T, T> total_cost;
-    total_cost.inputs = {0, 8,9,10,11,12, 40};
-    total_cost.outputs = {0, 8,9,10,11,12, 40};
-
     gubg::naft::Document doc{std::cout};
-    for (double x = -5; x < 45; x += 0.01)
+    for (double x = total_cost.inputs.front()-5; x < total_cost.inputs.back()+45; x += 0.01)
     {
         T tc;
         auto predict = [&](auto &p, const auto &i){
