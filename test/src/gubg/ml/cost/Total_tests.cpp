@@ -13,7 +13,7 @@ TEST_CASE("ml::cost::Total tests", "[ut][ml][cost][Total]")
     using Vec = std::vector<T>;
 
     cost::Total<T, T> total_cost;
-    total_cost.inputs = {0, 8,9,10,11,12, 400};
+    total_cost.inputs = {0, 8,9,10,11,12, 40};
     total_cost.outputs = total_cost.inputs;
 
     cost::bitsize::Entropy<T> entropy;
@@ -32,14 +32,14 @@ TEST_CASE("ml::cost::Total tests", "[ut][ml][cost][Total]")
     };
 
     cost::Quadratic<T> quadratic;
-    quadratic.factor = 1.0/200;
+    quadratic.factor = 1.0/100;
     auto quadratic_cost = [&](auto &c, const auto &p, const auto &o){
         c = quadratic(p, o);
         return true;
     };
 
     gubg::naft::Document doc{std::cout};
-    for (double x = total_cost.inputs.front()-5; x < total_cost.inputs.back()+45; x += 0.01)
+    for (double x = total_cost.inputs.front()-5; x < total_cost.inputs.back()+5; x += 0.01)
     {
         T tc;
         auto predict = [&](auto &p, const auto &i){
