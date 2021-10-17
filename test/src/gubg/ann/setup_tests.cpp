@@ -1,5 +1,5 @@
 #include "catch.hpp"
-#include "gubg/neural/setup.hpp"
+#include "gubg/ann/setup.hpp"
 using namespace gubg;
 
 namespace  { 
@@ -8,17 +8,17 @@ namespace  {
     using Inputs = std::vector<size_t>;
 } 
 
-TEST_CASE("neural::setup tests", "[ut][neural][setup]")
+TEST_CASE("ann::setup tests", "[ut][ann][setup]")
 {
-    neural::Simulator<Float> simulator;
+    ann::Simulator<Float> simulator;
 
     SECTION("setup structure from mlp::Structure")
     {
         mlp::Structure s(2);
-        s.add_layer(neural::Transfer::Tanh, 5, 0.0, 0.0);
-        s.add_layer(neural::Transfer::Linear, 1, 0.0, 0.0);
+        s.add_layer(ann::Transfer::Tanh, 5, 0.0, 0.0);
+        s.add_layer(ann::Transfer::Linear, 1, 0.0, 0.0);
         size_t first_input, bias, first_output;
-        REQUIRE(neural::setup(simulator, s, first_input, bias, first_output));
+        REQUIRE(ann::setup(simulator, s, first_input, bias, first_output));
         REQUIRE(simulator.nr_states() == (2+1+5+1));
         REQUIRE(simulator.nr_weights() == (5*3+1*6));
         REQUIRE(first_input == 0);
@@ -34,7 +34,7 @@ TEST_CASE("neural::setup tests", "[ut][neural][setup]")
 
             SECTION("correct amount of weights")
             {
-                REQUIRE(neural::setup(weights, p));
+                REQUIRE(ann::setup(weights, p));
                 for (auto v: weights)
                 {
                     REQUIRE(v == 0.0);
@@ -43,12 +43,12 @@ TEST_CASE("neural::setup tests", "[ut][neural][setup]")
             SECTION("not enough weights")
             {
                 weights.pop_back();
-                REQUIRE(!neural::setup(weights, p));
+                REQUIRE(!ann::setup(weights, p));
             }
             SECTION("too much weights")
             {
                 weights.push_back(1.0);
-                REQUIRE(!neural::setup(weights, p));
+                REQUIRE(!ann::setup(weights, p));
             }
         }
     }

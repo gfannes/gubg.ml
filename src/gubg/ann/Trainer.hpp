@@ -1,12 +1,12 @@
-#ifndef HEADER_gubg_neural_Trainer_hpp_ALREADY_INCLUDED
-#define HEADER_gubg_neural_Trainer_hpp_ALREADY_INCLUDED
+#ifndef HEADER_gubg_ann_Trainer_hpp_ALREADY_INCLUDED
+#define HEADER_gubg_ann_Trainer_hpp_ALREADY_INCLUDED
 
-#include "gubg/neural/Simulator.hpp"
-#include "gubg/optimization/SCG.hpp"
+#include <gubg/ann/Simulator.hpp>
+#include <gubg/optimization/SCG.hpp>
 #include <gubg/ml/fwd/Minimizer.hpp>
-#include "gubg/Range.hpp"
-#include "gubg/mss.hpp"
-#include "gubg/hr.hpp"
+#include <gubg/Range.hpp>
+#include <gubg/mss.hpp>
+#include <gubg/hr.hpp>
 #include <vector>
 #include <list>
 #include <map>
@@ -14,7 +14,7 @@
 #include <numeric>
 #include <random>
 
-namespace gubg { namespace neural { 
+namespace gubg { namespace ann { 
 
     namespace details {
         inline std::mt19937 &rng()
@@ -28,7 +28,7 @@ namespace gubg { namespace neural {
     class Trainer
     {
     public:
-        using Simulator = neural::Simulator<Float>;
+        using Simulator = ann::Simulator<Float>;
 
         Trainer(size_t input_size, size_t target_size): input_size_(input_size), target_size_(target_size)
         {

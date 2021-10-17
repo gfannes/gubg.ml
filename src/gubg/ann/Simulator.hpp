@@ -1,17 +1,15 @@
-#ifndef HEADER_gubg_neural_Simulator_hpp_ALREADY_INCLUDED
-#define HEADER_gubg_neural_Simulator_hpp_ALREADY_INCLUDED
+#ifndef HEADER_gubg_ann_Simulator_hpp_ALREADY_INCLUDED
+#define HEADER_gubg_ann_Simulator_hpp_ALREADY_INCLUDED
 
-#include "gubg/neural/Types.hpp"
-#include "gubg/Tanh.hpp"
-#include "gubg/Sigmoid.hpp"
-#include "gubg/Range.hpp"
-#include "gubg/mss.hpp"
+#include <gubg/ann/Transfer.hpp>
+#include <gubg/Range.hpp>
+#include <gubg/mss.hpp>
 #include <vector>
 #include <list>
 #include <memory>
 #include <cassert>
 
-namespace gubg { namespace neural { 
+namespace gubg { namespace ann { 
 
     namespace unit { 
         template <typename Float>
@@ -33,75 +31,6 @@ namespace gubg { namespace neural {
         };
     } 
 
-    namespace transfer { 
-        struct Identity
-        {
-            template <typename Float>
-            void operator()(Float &) const {}
-            template <typename Float>
-            Float derivative(Float x) const {return 1.0;}
-        };
-        struct Tanh
-        {
-            template <typename Float>
-            void operator()(Float &v) const
-            {
-                gubg::Tanh<Float> tanh;
-                v = tanh(v);
-            }
-            template <typename Float>
-            Float derivative(Float x) const
-            {
-                operator()(x);
-                return 1.0-x*x;
-            }
-        };
-        struct Sigmoid
-        {
-            template <typename Float>
-            void operator()(Float &v) const
-            {
-                gubg::Sigmoid<Float> sigmoid;
-                v = sigmoid(v);
-            }
-            template <typename Float>
-            Float derivative(Float x) const
-            {
-                operator()(x);
-                return x*(1.0-x);
-            }
-        };
-        struct LeakyReLU
-        {
-            template <typename Float>
-            void operator()(Float &v) const {if (v < 0) v *= 0.01;}
-            template <typename Float>
-            Float derivative(Float x) const
-            {
-                if (x < 0)
-                    return 0.01;
-                return 1.0;
-            }
-        };
-        struct SoftPlus
-        {
-            template <typename Float>
-            void operator()(Float &v) const {v = std::log(1.0+std::exp(v));}
-            template <typename Float>
-            Float derivative(Float x) const { return 1.0/(1.0+std::exp(-x)); }
-        };
-        struct Quadratic
-        {
-            template <typename Float>
-            void operator()(Float &v) const {v = v*v*0.5;}
-            template <typename Float>
-            Float derivative(Float x) const
-            {
-                return x;
-            }
-        };
-    } 
-
     namespace cost { 
         template <typename Float>
         class Quadratic: public unit::Interface<Float>
@@ -112,18 +41,18 @@ namespace gubg { namespace neural {
             void forward(Float *states, const Float *weights) const override
             {
                 states[output_] = (states[mean_] - states[wanted_]);
-                quadratic_(states[output_]);
+                states[output_] = transfer::Quadratic::output(states[output_]);
             }
             void forward(Float *states, Float *preacts, const Float *weights) const override
             {
                 preacts[output_] = states[output_] = (states[mean_] - states[wanted_]);
-                quadratic_(states[output_]);
+                states[output_] = transfer::Quadratic::output(states[output_]);
             }
 
             void backward(Float *derivative, Float *gradient, const Float *states, const Float *preacts, const Float *weights) const override
             {
                 auto &src = derivative[output_];
-                src *= quadratic_.derivative(preacts[output_]);
+                src *= transfer::Quadratic::derivative(preacts[output_]);
                 derivative[mean_] += src;
                 derivative[wanted_] -= src;
             }
@@ -131,7 +60,6 @@ namespace gubg { namespace neural {
             const size_t mean_;
             const size_t wanted_;
             const size_t output_;
-            transfer::Quadratic quadratic_;
         };
 
         template <typename Float>
@@ -190,19 +118,19 @@ namespace gubg { namespace neural {
             void forward(Float *states, const Float *weights) const override
             {
                 auto &dst = preactivate_(states, weights);
-                transfer_(dst);
+                dst = Transfer::output(dst);
             }
             void forward(Float *states, Float *preacts, const Float *weights) const override
             {
                 auto &dst = preactivate_(states, weights);
                 preacts[output_] = dst;
-                transfer_(dst);
+                dst = Transfer::output(dst);
             }
 
             void backward(Float *derivative, Float *gradient, const Float *states, const Float *preacts, const Float *weights) const override
             {
                 auto &src = derivative[output_];
-                src *= transfer_.derivative(preacts[output_]);
+                src *= Transfer::derivative(preacts[output_]);
                 auto w = weights+weight_;
                 auto g = gradient+weight_;
                 for (auto ix: inputs_)
@@ -225,7 +153,6 @@ namespace gubg { namespace neural {
             Inputs inputs_;
             Output output_;
             Weight weight_;
-            Transfer transfer_;
         };
 
         template <typename Float, typename Inputs>
@@ -233,7 +160,7 @@ namespace gubg { namespace neural {
         {
             switch (tf)
             {
-                case Transfer::Linear:    return new Neuron<Float, transfer::Identity>(inputs, output, weight);
+                case Transfer::Linear:    return new Neuron<Float, transfer::Linear>(inputs, output, weight);
                 case Transfer::Tanh:      return new Neuron<Float, transfer::Tanh>(inputs, output, weight);
                 case Transfer::Sigmoid:   return new Neuron<Float, transfer::Sigmoid>(inputs, output, weight);
                 case Transfer::LeakyReLU: return new Neuron<Float, transfer::LeakyReLU>(inputs, output, weight);

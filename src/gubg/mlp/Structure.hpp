@@ -1,7 +1,8 @@
 #ifndef HEADER_gubg_mlp_Structure_hpp_ALREADY_INCLUDED
 #define HEADER_gubg_mlp_Structure_hpp_ALREADY_INCLUDED
 
-#include "gubg/neural/Types.hpp"
+#include <gubg/ann/Transfer.hpp>
+#include <gubg/mss.hpp>
 #include <vector>
 
 namespace gubg { namespace mlp { 
@@ -14,7 +15,7 @@ namespace gubg { namespace mlp {
         {
             struct Neuron
             {
-                neural::Transfer transfer = neural::Transfer::Linear;
+                ann::Transfer transfer = ann::Transfer::Linear;
                 double weight_stddev = 1.0;
                 double bias_stddev = 1.0;
 
@@ -38,7 +39,7 @@ namespace gubg { namespace mlp {
         const Layer::Neuron &neuron(size_t lix, size_t nix) const {return layers[lix].neurons[nix];}
 
         template <typename Ftor> void add_layer(Ftor &&ftor);
-        void add_layer(neural::Transfer, unsigned int nr_neurons, double weight_stddev, double bias_stddev);
+        void add_layer(ann::Transfer, unsigned int nr_neurons, double weight_stddev, double bias_stddev);
 
         template <typename Writer> bool write(Writer &w) const;
         template <typename Reader> bool read(Reader &r);
@@ -51,7 +52,7 @@ namespace gubg { namespace mlp {
         layers.emplace_back();
         ftor(layers.back());
     }
-    inline void Structure::add_layer(neural::Transfer transfer, unsigned int nr_neurons, double weight_stddev, double bias_stddev)
+    inline void Structure::add_layer(ann::Transfer transfer, unsigned int nr_neurons, double weight_stddev, double bias_stddev)
     {
         add_layer([&](auto &layer){
                 for (auto i = 0u; i < nr_neurons; ++i)

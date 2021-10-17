@@ -1,14 +1,14 @@
-#ifndef HEADER_gubg_neural_setup_hpp_ALREADY_INCLUDED
-#define HEADER_gubg_neural_setup_hpp_ALREADY_INCLUDED
+#ifndef HEADER_gubg_ann_setup_hpp_ALREADY_INCLUDED
+#define HEADER_gubg_ann_setup_hpp_ALREADY_INCLUDED
 
-#include "gubg/neural/Simulator.hpp"
-#include "gubg/mlp/Structure.hpp"
-#include "gubg/mlp/Parameters.hpp"
-#include "gubg/mss.hpp"
+#include <gubg/ann/Simulator.hpp>
+#include <gubg/mlp/Structure.hpp>
+#include <gubg/mlp/Parameters.hpp>
+#include <gubg/mss.hpp>
 #include <vector>
 #include <numeric>
 
-namespace gubg { namespace neural { 
+namespace gubg { namespace ann { 
 
     template <typename Simulator, typename IX>
     bool setup(Simulator &simulator, const mlp::Structure &structure, IX &first_input, IX &bias, IX &first_output)

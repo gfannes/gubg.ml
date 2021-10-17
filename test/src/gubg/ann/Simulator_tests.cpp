@@ -1,9 +1,9 @@
-#include "catch.hpp"
-#include "gubg/neural/Simulator.hpp"
-#include "gubg/naft/Document.hpp"
-#include "gubg/mlp/Structure.hpp"
-#include "gubg/mlp/Parameters.hpp"
-#include "gubg/hr.hpp"
+#include <gubg/ann/Simulator.hpp>
+#include <gubg/naft/Document.hpp>
+#include <gubg/mlp/Structure.hpp>
+#include <gubg/mlp/Parameters.hpp>
+#include <gubg/hr.hpp>
+#include <catch.hpp>
 #include <vector>
 #include <iostream>
 #include <numeric>
@@ -15,9 +15,9 @@ namespace  {
     using Inputs = std::vector<size_t>;
 } 
 
-TEST_CASE("neural::Simulator tests", "[ut][neural][Simulator]")
+TEST_CASE("ann::Simulator tests", "[ut][ann][Simulator]")
 {
-    neural::Simulator<Float> simulator;
+    ann::Simulator<Float> simulator;
 
     REQUIRE(simulator.nr_states() == 0);
     REQUIRE(simulator.nr_weights() == 0);
@@ -35,11 +35,11 @@ TEST_CASE("neural::Simulator tests", "[ut][neural][Simulator]")
             Float output;
         };
         Info linear, tanh, sigmoid, leakyrelu, quadratic;
-        REQUIRE(simulator.add_neuron(neural::Transfer::Linear,    inputs, linear.output_ix,    linear.weight_ix));
-        REQUIRE(simulator.add_neuron(neural::Transfer::Tanh,      inputs, tanh.output_ix,      tanh.weight_ix));
-        REQUIRE(simulator.add_neuron(neural::Transfer::Sigmoid,   inputs, sigmoid.output_ix,   sigmoid.weight_ix));
-        REQUIRE(simulator.add_neuron(neural::Transfer::LeakyReLU, inputs, leakyrelu.output_ix, leakyrelu.weight_ix));
-        REQUIRE(simulator.add_neuron(neural::Transfer::Quadratic, inputs, quadratic.output_ix, quadratic.weight_ix));
+        REQUIRE(simulator.add_neuron(ann::Transfer::Linear,    inputs, linear.output_ix,    linear.weight_ix));
+        REQUIRE(simulator.add_neuron(ann::Transfer::Tanh,      inputs, tanh.output_ix,      tanh.weight_ix));
+        REQUIRE(simulator.add_neuron(ann::Transfer::Sigmoid,   inputs, sigmoid.output_ix,   sigmoid.weight_ix));
+        REQUIRE(simulator.add_neuron(ann::Transfer::LeakyReLU, inputs, leakyrelu.output_ix, leakyrelu.weight_ix));
+        REQUIRE(simulator.add_neuron(ann::Transfer::Quadratic, inputs, quadratic.output_ix, quadratic.weight_ix));
 
         REQUIRE(simulator.nr_weights() == 2+2+2+2+2);
 
@@ -112,7 +112,7 @@ TEST_CASE("neural::Simulator tests", "[ut][neural][Simulator]")
             for (unsigned int i = 0; i < nr_output; ++i)
             {
                 size_t output;
-                ok && (ok = simulator.add_neuron(neural::Transfer::Tanh, inputs, output));
+                ok && (ok = simulator.add_neuron(ann::Transfer::Tanh, inputs, output));
                 if (i == 0)
                     layer_input = output;
             }
@@ -165,7 +165,7 @@ TEST_CASE("neural::Simulator tests", "[ut][neural][Simulator]")
     SECTION("backward")
     {
         size_t output, weight;
-        simulator.add_neuron(neural::Transfer::Quadratic, inputs, output, weight);
+        simulator.add_neuron(ann::Transfer::Quadratic, inputs, output, weight);
 
         Vector states(simulator.nr_states());
         states[input] = 2.0;

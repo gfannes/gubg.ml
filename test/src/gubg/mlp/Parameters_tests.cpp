@@ -7,8 +7,8 @@ using namespace gubg;
 TEST_CASE("mlp::Parameters tests", "[ut][mlp][Parameters]")
 {
     mlp::Structure s(2);
-    s.add_layer(neural::Transfer::Sigmoid, 5, 0.5, 3.0);
-    s.add_layer(neural::Transfer::Linear, 1, 0.5, 3.0);
+    s.add_layer(ann::Transfer::Sigmoid, 5, 0.5, 3.0);
+    s.add_layer(ann::Transfer::Linear, 1, 0.5, 3.0);
 
     mlp::Parameters params1;
     params1.setup_from(s);

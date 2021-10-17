@@ -7,8 +7,8 @@ TEST_CASE("mlp::Structure tests", "[ut][mlp][Structure]")
 {
     mlp::Structure mlp1(2);
 
-    mlp1.add_layer(neural::Transfer::Sigmoid, 5, 0.5, 3.0);
-    mlp1.add_layer(neural::Transfer::Linear, 1, 0.5, 3.0);
+    mlp1.add_layer(ann::Transfer::Sigmoid, 5, 0.5, 3.0);
+    mlp1.add_layer(ann::Transfer::Linear, 1, 0.5, 3.0);
 
     std::string str1;
     REQUIRE(s11n::write_object(str1, ":mlp.Structure", mlp1));

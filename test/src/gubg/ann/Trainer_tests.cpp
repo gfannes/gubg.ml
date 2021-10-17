@@ -1,7 +1,7 @@
-#include "catch.hpp"
-#include "gubg/neural/Trainer.hpp"
-#include "gubg/hr.hpp"
-#include "gubg/naft/Document.hpp"
+#include <gubg/ann/Trainer.hpp>
+#include <gubg/hr.hpp>
+#include <gubg/naft/Document.hpp>
+#include <catch.hpp>
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -9,12 +9,12 @@ using namespace gubg;
 
 namespace  { 
     using Float = float;
-    using Simulator = neural::Simulator<Float>;
-    using Trainer = neural::Trainer<Float>;
+    using Simulator = ann::Simulator<Float>;
+    using Trainer = ann::Trainer<Float>;
     using Vector = std::vector<Float>;
 } 
 
-TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
+TEST_CASE("ann::Trainer tests", "[ut][ann][Trainer]")
 {
     //Create the trainer, ready to train a network with 1 input and 1 output
     Trainer trainer(1,1);
@@ -27,7 +27,7 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
     }
     REQUIRE(trainer.data_size() == 401);
 
-    //Create the neural::Simulator
+    //Create the ann::Simulator
     Simulator simulator;
     const auto input = simulator.add_external(1);
     const auto bias = simulator.add_external(1);
@@ -37,7 +37,7 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
         for (int i = 0; i < nr; ++i)
         {
             size_t output;
-            simulator.add_neuron(neural::Transfer::Tanh, layer_inputs, output);
+            simulator.add_neuron(ann::Transfer::Tanh, layer_inputs, output);
             layer_outputs.push_back(output);
         }
         layer_inputs.swap(layer_outputs);
@@ -48,14 +48,14 @@ TEST_CASE("neural::Trainer tests", "[ut][neural][Trainer]")
     for (int i = 0; i < 2; ++i)
         add_layer(10);
     size_t output;
-    simulator.add_neuron(neural::Transfer::Linear, layer_inputs, output);
+    simulator.add_neuron(ann::Transfer::Linear, layer_inputs, output);
 #else
     //1 tanh neuron
     size_t output;
-    simulator.add_neuron(neural::Transfer::Tanh, layer_inputs, output);
+    simulator.add_neuron(ann::Transfer::Tanh, layer_inputs, output);
 #endif
 
-    //Inject this neural::Simulator into the trainer
+    //Inject this ann::Simulator into the trainer
     REQUIRE(!trainer.set(nullptr, input, output));
     REQUIRE(trainer.set(&simulator, input, output));
     trainer.add_fixed_input(bias, 1.0);
