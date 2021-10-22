@@ -12,6 +12,7 @@ namespace  {
     using Simulator = ann::Simulator<Float>;
     using Trainer = ann::Trainer<Float>;
     using Vector = std::vector<Float>;
+    using IXs = std::vector<std::size_t>;
 } 
 
 TEST_CASE("ann::Trainer tests", "[ut][ann][Trainer]")
@@ -31,9 +32,9 @@ TEST_CASE("ann::Trainer tests", "[ut][ann][Trainer]")
     Simulator simulator;
     const auto input = simulator.add_external(1);
     const auto bias = simulator.add_external(1);
-    Vector layer_inputs = {Float(input), bias};
+    IXs layer_inputs = {input, bias};
     auto add_layer = [&](int nr){
-        Vector layer_outputs;
+        IXs layer_outputs;
         for (int i = 0; i < nr; ++i)
         {
             size_t output;

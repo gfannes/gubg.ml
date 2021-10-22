@@ -46,19 +46,7 @@ namespace gubg { namespace ann {
 			for (auto ix = 0u; ix < shape_.nr_inputs; ++ix)
 				output += input[ix]*param[ix];
 
-			//Transfer
-			switch (shape_.transfer)
-			{
-				case Transfer::Linear:    output = transfer::Linear::output(output); break;
-				case Transfer::Tanh:      output = transfer::Tanh::output(output); break;
-				case Transfer::Sigmoid:   output = transfer::Sigmoid::output(output); break;
-				case Transfer::LeakyReLU: output = transfer::LeakyReLU::output(output); break;
-				case Transfer::SoftPlus:  output = transfer::SoftPlus::output(output); break;
-				case Transfer::Quadratic: output = transfer::Quadratic::output(output); break;
-				default: assert(false);   output = 0; break;
-			}
-
-			outputs[output_ix_] = output;
+			outputs[output_ix_] = transfer::output(output, shape_.transfer);
 		}
 
 	private:

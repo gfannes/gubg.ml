@@ -1,5 +1,6 @@
-#include "catch.hpp"
-#include "gubg/ml/cost/Total.hpp"
+#include <gubg/ml/cost/Total.hpp>
+#include <catch.hpp>
+#include <array>
 using namespace gubg;
 
 namespace  { 

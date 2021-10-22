@@ -1,49 +1,26 @@
-#ifndef HEADER_gubg_ann_Types_hpp_ALREADY_INCLUDED
-#define HEADER_gubg_ann_Types_hpp_ALREADY_INCLUDED
+#ifndef HEADER_gubg_ann_Transfer_hpp_ALREADY_INCLUDED
+#define HEADER_gubg_ann_Transfer_hpp_ALREADY_INCLUDED
 
 #include <gubg/Tanh.hpp>
 #include <gubg/Sigmoid.hpp>
 #include <string>
+#include <cassert>
 
-namespace gubg { namespace ann { 
+namespace gubg { namespace ann {
 
     enum class Transfer
     {
         Linear, Tanh, Sigmoid, LeakyReLU, SoftPlus, Quadratic,
     };
 
-    inline const char *to_str(Transfer transfer)
-    {
-        switch (transfer)
-        {
-#define L_CASE(name) case Transfer::name: return #name
-            L_CASE(Linear);
-            L_CASE(Tanh);
-            L_CASE(Sigmoid);
-            L_CASE(LeakyReLU);
-            L_CASE(SoftPlus);
-            L_CASE(Quadratic);
-#undef L_CASE
-            default: break;
-        }
-        return "Unknown Transfer";
-    }
-
-    inline bool from_str(Transfer &transfer, const std::string &str)
-    {
-#define L_IF(name) if (str == #name) {transfer = Transfer::name; return true;}
-        L_IF(Linear)
-        L_IF(Tanh)
-        L_IF(Sigmoid)
-        L_IF(LeakyReLU)
-        L_IF(SoftPlus)
-        L_IF(Quadratic)
-#undef L_ELSE_IF
-
-        return false;
-    }
+    const char *to_str(Transfer transfer);
+    bool from_str(Transfer &transfer, const std::string &str);
 
     namespace transfer { 
+
+        template <typename T>
+        T output(T v, Transfer transfer);
+
         struct Linear
         {
             template <typename Float>
@@ -110,8 +87,23 @@ namespace gubg { namespace ann {
                 return x;
             }
         };
-    } 
-
+    
+        template <typename T>
+        T output(T v, Transfer transfer)
+        {
+            switch (transfer)
+            {
+                case Transfer::Linear:    v = Linear::output(v); break;
+                case Transfer::Tanh:      v = Tanh::output(v); break;
+                case Transfer::Sigmoid:   v = Sigmoid::output(v); break;
+                case Transfer::LeakyReLU: v = LeakyReLU::output(v); break;
+                case Transfer::SoftPlus:  v = SoftPlus::output(v); break;
+                case Transfer::Quadratic: v = Quadratic::output(v); break;
+                default: assert(false);   v = 0; break;
+            }
+            return v;
+        }
+    }
 } } 
 
 #endif
