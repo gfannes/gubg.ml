@@ -12,24 +12,24 @@ TEST_CASE("ann::Stack tests", "[ut][ann][Stack]")
 	stack.add_layer(1, ann::Transfer::Linear);
 
 
+	ix::Range input_ixr;
+	ix::Range_opt output_ixr_opt;
 	ix::Range param_ixr;
-	stack.setup_param_ixs(param_ixr);
-	REQUIRE(param_ixr == ix::Range{0, 3*3+4});
+	REQUIRE(stack.setup_ixrs(input_ixr, output_ixr_opt, param_ixr));
 
-	std::vector<float> params(param_ixr.size());
-	param_ixr.each_with_index([](auto &v, auto ix){v = (ix+1)*0.1f;}, params);
-
-
-	ix::Range input_ixr, output_ixr;
-	stack.setup_io_ixs(input_ixr, output_ixr);
 	REQUIRE(input_ixr == ix::Range{0,2});
+	REQUIRE(!!output_ixr_opt);
+	const auto &output_ixr = *output_ixr_opt;
 	REQUIRE(output_ixr == ix::Range{5,1});
+	REQUIRE(param_ixr == ix::Range{0, 3*3+4});
 
 	ix::Range hidden_ixr{input_ixr.end(), 3};
 
 	std::vector<float> activations(output_ixr.end());
-	activations[0] = 1.0f;
-	activations[1] = 2.0f;
+	input_ixr.each_with_index([](auto &v, auto ix){v = ix+1.0f;}, activations);
+
+	std::vector<float> params(param_ixr.size());
+	param_ixr.each_with_index([](auto &v, auto ix){v = (ix+1)*0.1f;}, params);
 
 	std::vector<float> sufficients(output_ixr.end());
 

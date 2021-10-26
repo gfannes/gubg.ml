@@ -23,16 +23,14 @@ namespace gubg { namespace ann {
 				neuron.setup({.nr_inputs = shape.nr_inputs, .transfer = shape.transfer});
 		}
 
-		void setup_io_ixs(ix::Range &input_ixr, ix::Range &output_ixr)
+		bool setup_ixrs(ix::Range &input_ixr, ix::Range_opt &output_ixr_opt, ix::Range &param_ixr)
 		{
-			for (auto &neuron: neurons_)
-				neuron.setup_io_ixs(input_ixr, output_ixr);
-		}
+			MSS_BEGIN(bool);
 
-		void setup_param_ixs(ix::Range &param_ixr)
-		{
 			for (auto &neuron: neurons_)
-				neuron.setup_param_ixs(param_ixr);
+				MSS(neuron.setup_ixrs(input_ixr, output_ixr_opt, param_ixr));
+
+			MSS_END();
 		}
 
 		template <typename Params, typename Activations, typename Sufficients>

@@ -26,8 +26,10 @@ namespace gubg { namespace ann {
 			current_nr_outputs_ = nr_outputs;
 		}
 
-		void setup_io_ixs(ix::Range &input_ixr, ix::Range &output_ixr)
+		bool setup_ixrs(ix::Range &input_ixr, ix::Range_opt &output_ixr_opt, ix::Range &param_ixr)
 		{
+			MSS_BEGIN(bool);
+
 			for (auto ix = 0u; ix < layers_.size(); ++ix)
 			{
 				auto &layer = layers_[ix];
@@ -35,21 +37,18 @@ namespace gubg { namespace ann {
 				if (ix == 0u)
 				{
 					input_ixr.resize(shape_.nr_inputs);
-					layer.setup_io_ixs(input_ixr, output_ixr);
+					MSS(layer.setup_ixrs(input_ixr, output_ixr_opt, param_ixr));
 				}
 				else
 				{
-					auto hidden_input_ixr = output_ixr;
-					output_ixr.clear();
-					layer.setup_io_ixs(hidden_input_ixr, output_ixr);
+					MSS(!!output_ixr_opt);
+					auto hidden_input_ixr = *output_ixr_opt;
+					output_ixr_opt.reset();
+					MSS(layer.setup_ixrs(hidden_input_ixr, output_ixr_opt, param_ixr));
 				}
 			}
-		}
 
-		void setup_param_ixs(ix::Range &param_ixr)
-		{
-			for (auto &layer: layers_)
-				layer.setup_param_ixs(param_ixr);
+			MSS_END();
 		}
 
 		template <typename Params, typename Activations, typename Sufficients>

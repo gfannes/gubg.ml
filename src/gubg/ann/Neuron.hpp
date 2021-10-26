@@ -3,6 +3,7 @@
 
 #include <gubg/ann/Transfer.hpp>
 #include <gubg/ix/Range.hpp>
+#include <gubg/mss.hpp>
 #include <cassert>
 
 namespace gubg { namespace ann { 
@@ -19,23 +20,22 @@ namespace gubg { namespace ann {
 
 		void setup(const Shape &shape) { shape_ = shape; }
 
-		void setup_io_ixs(ix::Range &input_ixr, ix::Range &output_ixr)
+		bool setup_ixrs(ix::Range &input_ixr, ix::Range_opt &output_ixr_opt, ix::Range &param_ixr)
 		{
+			MSS_BEGIN(bool);
+
 			input_ixr.resize(shape_.nr_inputs);
 			input_ix_ = input_ixr.begin();
 
-			if (output_ixr.empty())
-				output_ixr.setup(input_ixr.end(), 0u);
+			if (!output_ixr_opt)
+				output_ixr_opt = ix::Range{input_ixr.end(), 0u};
+			output_ix_ = output_ixr_opt->end();
+			output_ixr_opt->push_back(1);
 
-			output_ix_ = output_ixr.end();
-
-			output_ixr.push_back(1);
-		}
-
-		void setup_param_ixs(ix::Range &param_ixr)
-		{
 			bias_ix_ = param_ixr.end();
 			param_ixr.push_back(1u + shape_.nr_inputs);
+	
+			MSS_END();
 		}
 
 		template <typename Params, typename Activations, typename Sufficients>
