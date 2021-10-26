@@ -15,46 +15,79 @@ namespace gubg { namespace ann {
 			std::size_t nr_inputs = 0u;
 			Transfer transfer = Transfer::Linear;
 		};
+		const Shape &shape() const {return shape_;}
+
 		void setup(const Shape &shape) { shape_ = shape; }
 
-		//Indicate this Neuron at what input index it can find its inputs
-		//and where it should write its output
-		template <typename Index>
-		void consume_io(Index& input_ix, Index &output_ix)
+		void setup_io_ixs(ix::Range &input_ixr, ix::Range &output_ixr)
 		{
-			input_ix_ = input_ix; input_ix += shape_.nr_inputs;
-			output_ix_ = output_ix++;
+			input_ixr.resize(shape_.nr_inputs);
+			input_ix_ = input_ixr.begin();
+
+			if (output_ixr.empty())
+				output_ixr.setup(input_ixr.end(), 0u);
+
+			output_ix_ = output_ixr.end();
+
+			output_ixr.push_back(1);
 		}
 
-		//Indicate this Neuron at what parameter index it can find its parameters
-		template <typename Index>
-		void consume_params(Index& index)
+		void setup_param_ixs(ix::Range &param_ixr)
 		{
-			bias_ix_ = index++;
-			weight_ix = index; index += shape_.nr_inputs;
+			bias_ix_ = param_ixr.end();
+			param_ixr.push_back(1u + shape_.nr_inputs);
 		}
 
-		template <typename Inputs, typename Params, typename Outputs>
-		auto forward(Inputs &&inputs, Params &&params, Outputs &&outputs) const
+		template <typename Params, typename Activations, typename Sufficients>
+		void forward(Params &&params, Activations &&activations, Sufficients &&sufficients) const
 		{
 			//Bias
-			auto output = params[bias_ix_];
+			auto sufficient = params[bias_ix_];
+
+			//Params * Inputs
+			{
+				const auto param = &params[weight_ix_()];
+				const auto input = &activations[input_ix_];
+				for (auto ix = 0u; ix < shape_.nr_inputs; ++ix)
+					sufficient += param[ix]*input[ix];
+			}
+
+			sufficients[output_ix_] = sufficient;
+			activations[output_ix_] = transfer::output(sufficient, shape_.transfer);
+		}
+
+		template <typename Params, typename Activations, typename Sufficients, typename Gradient, typename Errors>
+		void backward(Params &&params, Activations &&activations, Sufficients &&sufficients, Gradient &&gradient, Errors &errors) const
+		{
+			#if 0
+			const auto derived_output = errors[output_ix_];
+
+			//Bias
+			gradient[bias_ix_] += derived_output;
 
 			//Input * Params
 			const auto input = &inputs[input_ix_];
-			const auto param = &params[weight_ix];
+			const auto param = &params[weight_ix_()];
+			auto grad = &gradient[weight_ix_()];
+			auto derived_input = &errors[input_ix_];
 			for (auto ix = 0u; ix < shape_.nr_inputs; ++ix)
+			{
+				grad[ix] += derived_output*input[ix];
+				derived_input[ix] += derived_output*param[ix];
+			}
 				output += input[ix]*param[ix];
 
 			outputs[output_ix_] = transfer::output(output, shape_.transfer);
+			#endif
 		}
 
 	private:
 		Shape shape_;
 		std::size_t input_ix_ = 0u;
-		std::size_t bias_ix_ = 0u;
-		std::size_t weight_ix = 0u;
 		std::size_t output_ix_ = 0u;
+
+		std::size_t bias_ix_ = 0u;
+		std::size_t weight_ix_() const {return bias_ix_+1;}
 	};
 
 } } 

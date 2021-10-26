@@ -2,6 +2,7 @@
 #define HEADER_gubg_ann_Layer_hpp_ALREADY_INCLUDED
 
 #include <gubg/ann/Neuron.hpp>
+#include <gubg/ix/Range.hpp>
 #include <vector>
 
 namespace gubg { namespace ann { 
@@ -22,32 +23,30 @@ namespace gubg { namespace ann {
 				neuron.setup({.nr_inputs = shape.nr_inputs, .transfer = shape.transfer});
 		}
 
-		//Indicate this Layer at what input index it can find its inputs
-		//and where it should write its outputs
-		template <typename Index>
-		void consume_io(Index& input_ix, Index &output_ix)
+		void setup_io_ixs(ix::Range &input_ixr, ix::Range &output_ixr)
 		{
-			const auto orig_input_ix = input_ix;
 			for (auto &neuron: neurons_)
-			{
-				input_ix = orig_input_ix;
-				neuron.consume_io(input_ix, output_ix);
-			}
+				neuron.setup_io_ixs(input_ixr, output_ixr);
 		}
 
-		//Indicate this Layer at what parameter index it can find its parameters
-		template <typename Index>
-		void consume_params(Index& index)
+		void setup_param_ixs(ix::Range &param_ixr)
 		{
 			for (auto &neuron: neurons_)
-				neuron.consume_params(index);
+				neuron.setup_param_ixs(param_ixr);
 		}
 
-		template <typename Inputs, typename Params, typename Outputs>
-		auto forward(Inputs &&inputs, Params &&params, Outputs &&outputs) const
+		template <typename Params, typename Activations, typename Sufficients>
+		void forward(Params &&params, Activations &&activations, Sufficients &&sufficients) const
 		{
 			for (auto &neuron: neurons_)
-				neuron.forward(inputs, params, outputs);
+				neuron.forward(params, activations, sufficients);
+		}
+
+		template <typename Params, typename Activations, typename Sufficients, typename Gradient, typename Errors>
+		void backward(Params &&params, Activations &&activations, Sufficients &&sufficients, Gradient &&gradient, Errors &errors) const
+		{
+			for (auto &neuron: neurons_)
+				neuron.backward(params, activations, sufficients, gradient, errors);
 		}
 
 	private:

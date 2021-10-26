@@ -9,27 +9,28 @@ TEST_CASE("ANN Neuron tests", "[ut][ann][Neuron]")
 
 	neuron.setup({.nr_inputs = 2, .transfer = ann::Transfer::Tanh});
 
-	std::size_t nr_inputs = 0u;
-	std::size_t nr_outputs = 0u;
-	neuron.consume_io(nr_inputs, nr_outputs);
-	REQUIRE(nr_inputs == 2);
-	REQUIRE(nr_outputs == 1);
 
-	std::size_t nr_params = 0u;
-	neuron.consume_params(nr_params);
-	REQUIRE(nr_params == 3);
+	ix::Range param_ixr;
+	neuron.setup_param_ixs(param_ixr);
+	REQUIRE(param_ixr == ix::Range{0, 3});
 
-	std::vector<float> inputs(nr_inputs);
-	inputs[0] = 1.0f;
-	inputs[1] = 2.0f;
-
-	std::vector<float> params(nr_params);
+	std::vector<float> params(param_ixr.end());
 	params[0] = 0.1f;//bias
 	params[1] = 0.2f;
 	params[2] = 0.3f;
 
-	std::vector<float> outputs(nr_outputs);
+	ix::Range input_ixr, output_ixr;
+	neuron.setup_io_ixs(input_ixr, output_ixr);
+	REQUIRE(input_ixr == ix::Range{0, 2});
+	REQUIRE(output_ixr == ix::Range{2, 1});
 
-	neuron.forward(inputs, params, outputs);
-	REQUIRE(outputs[0] == Approx(ann::transfer::Tanh::output(0.1 + 1*0.2 + 2*0.3)));
+	std::vector<float> activations(output_ixr.end());
+	activations[0] = 1.0f;
+	activations[1] = 2.0f;
+
+
+	std::vector<float> sufficients(output_ixr.end());
+
+	neuron.forward(params, activations, sufficients);
+	REQUIRE(activations[output_ixr[0]] == Approx(ann::transfer::Tanh::output(0.1 + 1*0.2 + 2*0.3)));
 }	
