@@ -61,8 +61,13 @@ namespace gubg { namespace ann {
 		template <typename Params, typename Activations, typename Sufficients, typename Gradient, typename Errors>
 		void backward(Params &&params, Activations &&activations, Sufficients &&sufficients, Gradient &&gradient, Errors &&errors)
 		{
-			for (const auto &layer: layers_)
+			for (auto ix = layers_.size(); ix > 0;)
+			{
+				--ix;
+				auto &layer = layers_[ix];
+
 				layer.backward(params, activations, sufficients, gradient, errors);
+			}
 		}
 
 	private:

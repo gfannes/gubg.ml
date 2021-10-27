@@ -48,8 +48,8 @@ namespace gubg { namespace ann {
 			{
 				const auto param = &params[weight_ix_()];
 				const auto input = &activations[input_ix_];
-				for (auto ix = 0u; ix < shape_.nr_inputs; ++ix)
-					sufficient += param[ix]*input[ix];
+				for (auto ix0 = 0u; ix0 < shape_.nr_inputs; ++ix0)
+					sufficient += param[ix0]*input[ix0];
 			}
 
 			sufficients[output_ix_] = sufficient;
@@ -59,26 +59,21 @@ namespace gubg { namespace ann {
 		template <typename Params, typename Activations, typename Sufficients, typename Gradient, typename Errors>
 		void backward(Params &&params, Activations &&activations, Sufficients &&sufficients, Gradient &&gradient, Errors &errors) const
 		{
-			#if 0
-			const auto derived_output = errors[output_ix_];
+			auto error_deriv = errors[output_ix_]*transfer::output(activations[output_ix_], shape_.transfer);
 
 			//Bias
-			gradient[bias_ix_] += derived_output;
+			gradient[bias_ix_] += error_deriv;
 
 			//Input * Params
-			const auto input = &inputs[input_ix_];
+			const auto input = &activations[input_ix_];
+			auto error = &errors[input_ix_];
 			const auto param = &params[weight_ix_()];
 			auto grad = &gradient[weight_ix_()];
-			auto derived_input = &errors[input_ix_];
-			for (auto ix = 0u; ix < shape_.nr_inputs; ++ix)
+			for (auto ix0 = 0u; ix0 < shape_.nr_inputs; ++ix0)
 			{
-				grad[ix] += derived_output*input[ix];
-				derived_input[ix] += derived_output*param[ix];
+				grad[ix0] += error_deriv*input[ix0];
+				error[ix0] += error_deriv*param[ix0];
 			}
-				output += input[ix]*param[ix];
-
-			outputs[output_ix_] = transfer::output(output, shape_.transfer);
-			#endif
 		}
 
 	private:
