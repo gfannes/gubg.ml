@@ -6,11 +6,9 @@ TEST_CASE("ann::Stack tests", "[ut][ann][Stack]")
 {
 	ann::Stack stack;
 
-
-	stack.setup({.nr_inputs = 2});
+	stack.setup({.nr_inputs = 2, .nr_outputs = 1});
 	stack.add_layer(3, ann::Transfer::Tanh);
 	stack.add_layer(1, ann::Transfer::Linear);
-
 
 	ix::Range input_ixr;
 	ix::Range_opt output_ixr_opt;
@@ -38,4 +36,12 @@ TEST_CASE("ann::Stack tests", "[ut][ann][Stack]")
 	REQUIRE(activations[hidden_ixr[1]] == Approx(ann::transfer::Tanh::output(0.4 + 1*0.5 + 2*0.6)));
 	REQUIRE(activations[hidden_ixr[2]] == Approx(ann::transfer::Tanh::output(0.7 + 1*0.8 + 2*0.9)));
 	REQUIRE(activations[output_ixr[0]] == Approx(params[9] + activations[hidden_ixr[0]]*params[10]+activations[hidden_ixr[1]]*params[11]+activations[hidden_ixr[2]]*params[12]));
+
+	std::vector<float> gradient(param_ixr.size());
+	std::vector<float> errors(output_ixr.end());
+	errors.back() = 1;
+	stack.backward(params, activations, sufficients, gradient, errors);
+	param_ixr.each_with_index([](auto v, auto ix){std::cout << ix << "\t" << v << std::endl;}, gradient);
+	for (auto ix = 0u; ix < errors.size(); ++ix)
+		std::cout << ix << "\t" << errors[ix] << std::endl;
 }	

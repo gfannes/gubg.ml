@@ -12,6 +12,7 @@ namespace gubg { namespace ann {
 		struct Shape
 		{
 			std::size_t nr_inputs = 0u;
+			std::size_t nr_outputs = 0u;
 		};
 		void setup(const Shape &shape)
 		{
@@ -29,6 +30,8 @@ namespace gubg { namespace ann {
 		bool setup_ixrs(ix::Range &input_ixr, ix::Range_opt &output_ixr_opt, ix::Range &param_ixr)
 		{
 			MSS_BEGIN(bool);
+
+			MSS(current_nr_outputs_ == shape_.nr_outputs);
 
 			for (auto ix = 0u; ix < layers_.size(); ++ix)
 			{
