@@ -43,7 +43,7 @@ namespace gubg { namespace ann {
 		template <typename Params, typename Activations, typename Sufficients, typename Gradient, typename Errors>
 		void backward(Params &&params, Activations &&activations, Sufficients &&sufficients, Gradient &&gradient, Errors &errors) const
 		{
-			for (auto &neuron: neurons_)
+			for (const auto &neuron: neurons_)
 				neuron.backward(params, activations, sufficients, gradient, errors);
 		}
 

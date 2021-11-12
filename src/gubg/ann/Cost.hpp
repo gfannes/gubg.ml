@@ -17,7 +17,8 @@ namespace gubg { namespace ann {
 		{
 			type_ = Quadratic;
 			sigma_ = sigma;
-			factor_ = 0.5/(sigma_*sigma_);
+			factor2_ = 1.0/(sigma_*sigma_);
+			factor_ = 0.5*factor2_;
 			return *this;
 		}
 
@@ -45,16 +46,42 @@ namespace gubg { namespace ann {
 				{
 					const auto size = prediction_ixr_.size();
 					MSS(target_ixr_.size() == size);
+
 					Value my_cost{};
-					for (auto ix = 0u; ix < size; ++ix)
-					{
-						const auto p = prediction[prediction_ixr_[ix]];
-						const auto t = target[target_ixr_[ix]];
+					prediction_ixr_.each_with_offset([&](auto p, auto ix0){
+						const auto t = target[target_ixr_[ix0]];
 						const auto diff = (p-t);
 						my_cost += diff*diff*factor_;
-					}
+					}, prediction);
 
 					agg_cost += my_cost;
+				}
+				break;
+
+				default: MSS(false); break;
+			}
+
+			MSS_END();
+		}
+
+		template <typename Gradient, typename Prediction, typename Target>
+		bool gradient(Gradient &&grad, Prediction &&prediction, Target &&target) const
+		{
+			MSS_BEGIN(bool);
+
+			MSS(!!type_);
+			switch (*type_)
+			{
+				case Quadratic:
+				{
+					const auto size = prediction_ixr_.size();
+					MSS(target_ixr_.size() == size);
+
+					prediction_ixr_.each_with_offset([&](auto &g, auto p, auto ix0){
+						const auto t = target[target_ixr_[ix0]];
+						const auto diff = (p-t);
+						g = diff*factor2_;
+					}, grad, prediction);
 				}
 				break;
 
@@ -70,7 +97,8 @@ namespace gubg { namespace ann {
 		ix::Range prediction_ixr_;
 		ix::Range target_ixr_;
 		Float sigma_ = 0.0;
-		Float factor_ = 0.0;
+		Float factor_ = 0.0;//1/(2*sigma_*sigma_)
+		Float factor2_ = 0.0;//2*factor_
 	};
 
 } } 

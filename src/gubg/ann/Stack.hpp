@@ -32,6 +32,7 @@ namespace gubg { namespace ann {
 			MSS_BEGIN(bool);
 
 			MSS(current_nr_outputs_ == shape_.nr_outputs);
+			MSS(!layers_.empty());
 
 			for (auto ix = 0u; ix < layers_.size(); ++ix)
 			{
@@ -62,12 +63,12 @@ namespace gubg { namespace ann {
 		}
 
 		template <typename Params, typename Activations, typename Sufficients, typename Gradient, typename Errors>
-		void backward(Params &&params, Activations &&activations, Sufficients &&sufficients, Gradient &&gradient, Errors &&errors)
+		void backward(Params &&params, Activations &&activations, Sufficients &&sufficients, Gradient &&gradient, Errors &&errors) const
 		{
 			for (auto ix = layers_.size(); ix > 0;)
 			{
 				--ix;
-				auto &layer = layers_[ix];
+				const auto &layer = layers_[ix];
 
 				layer.backward(params, activations, sufficients, gradient, errors);
 			}
