@@ -59,7 +59,7 @@ namespace gubg { namespace ann {
 		template <typename Params, typename Activations, typename Sufficients, typename Gradient, typename Errors>
 		void backward(Params &&params, Activations &&activations, Sufficients &&sufficients, Gradient &&gradient, Errors &errors) const
 		{
-			auto error_deriv = errors[output_ix_]*transfer::output(activations[output_ix_], shape_.transfer);
+			auto error_deriv = errors[output_ix_]*transfer::derivative(sufficients[output_ix_], shape_.transfer);
 
 			//Bias
 			gradient[bias_ix_] += error_deriv;

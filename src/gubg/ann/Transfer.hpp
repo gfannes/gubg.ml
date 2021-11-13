@@ -103,6 +103,22 @@ namespace gubg { namespace ann {
             }
             return v;
         }
+    
+        template <typename T>
+        T derivative(T v, Transfer transfer)
+        {
+            switch (transfer)
+            {
+                case Transfer::Linear:    v = Linear::derivative(v); break;
+                case Transfer::Tanh:      v = Tanh::derivative(v); break;
+                case Transfer::Sigmoid:   v = Sigmoid::derivative(v); break;
+                case Transfer::LeakyReLU: v = LeakyReLU::derivative(v); break;
+                case Transfer::SoftPlus:  v = SoftPlus::derivative(v); break;
+                case Transfer::Quadratic: v = Quadratic::derivative(v); break;
+                default: assert(false);   v = 0; break;
+            }
+            return v;
+        }
     }
 } } 
 

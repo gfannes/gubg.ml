@@ -1,4 +1,5 @@
 #include <gubg/ann/Model.hpp>
+#include <gubg/hr.hpp>
 #include <catch.hpp>
 using namespace gubg;
 
@@ -47,6 +48,7 @@ TEST_CASE("ann::Model tests", "[ut][ann][Model]")
 	{
 		unsigned int count = 0;
 		auto receive_gradient = [&](const auto &gradient){
+			L(C(hr(gradient)));
 			++count;
 		};
 		REQUIRE(!model.avg_gradient(enter_no_data, receive_gradient));
