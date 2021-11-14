@@ -54,66 +54,56 @@ namespace gubg { namespace ann { namespace optimization {
 			MSS_BEGIN(bool);
 
 			ixr_ = ixr;
-
-			previous.location.resize(ixr.end());
-			ixr.each([](auto &dst, auto src){dst = src;}, previous.location, location);
-			previous.cost = cost;
-
-			proposal.location.resize(ixr.end());
-			ixr.each([](auto &dst, auto src){dst = src;}, proposal.location, location);
-			proposal.cost = cost;
 	
 			MSS_END();
 		}
 
 		template <typename Location>
-		bool update(Location &&proposal_location, Float previous_proposal_cost)
+		bool update(Location &&proposal_location, Float proposal_cost)
 		{
 			MSS_BEGIN(bool);
 
-			//Accept the proposal from the previous iteration according to the rules
-			proposal.cost = previous_proposal_cost;
-			if (previous_proposal_cost <= previous.cost)
+			MSS(!!ixr_);
+			const auto &ixr = *ixr_;
+
+			//Should we accept the proposal from the previous iteration?
+			bool accept = false;
+			if (!accepted_opt_)
 			{
-				MSS(accept_proposal_());
+				//First time, we always accept
+				accept = true;
+				auto &accepted = accepted_opt_.emplace();
+				accepted.location.resize(ixr.end());
+			}
+			else if (proposal_cost <= accepted_opt_->cost)
+			{
+				//New cost is lower: always accept
+				accept = true;
 			}
 			else
 			{
-				const auto cost_diff = previous_proposal_cost-previous.cost;
+				//Accept according to Metropolis-Hasting probabilities
+				auto &accepted = *accepted_opt_;
+				const auto cost_diff = proposal_cost-accepted.cost;
 				bernoulli_.set_prob(std::exp(-cost_diff));
-				if (bernoulli_())
-					MSS(accept_proposal_());
+				accept = bernoulli_();
+			}
+			auto &accepted = *accepted_opt_;
+
+			//Copy the proposal location and cost if accepted
+			if (accept)
+			{
+				ixr.each([](auto &dst, auto src){dst = src;}, accepted.location, proposal_location);
+				accepted.cost = proposal_cost;
 			}
 
 			//Create a new proposal location
-			MSS(create_proposal_());
+			ixr.each([&](auto &dst, auto src){dst = src + normal_(rng_);}, proposal_location, accepted.location);
 
 			MSS_END();
 		}
 
 	private:
-		bool accept_proposal_()
-		{
-			MSS_BEGIN(bool);
-
-			MSS(!!ixr_);
-			const auto &ixr = *ixr_;
-			ixr.each([](auto &dst, auto src){dst = src;}, previous.location, proposal.location);
-			previous.cost = proposal.cost;
-
-			MSS_END();
-		}
-		bool create_proposal_()
-		{
-			MSS_BEGIN(bool);
-
-			MSS(!!ixr_);
-			const auto &ixr = *ixr_;
-			ixr.each([&](auto &dst, auto src){dst = src + normal_(rng_);}, proposal.location, previous.location);
-
-			MSS_END();
-		}
-
 		std::optional<ix::Range> ixr_;
 
 		struct Info
@@ -121,8 +111,7 @@ namespace gubg { namespace ann { namespace optimization {
 			std::vector<Float> location;
 			Float cost = 0;
 		};
-		Info previous;
-		Info proposal;
+		std::optional<Info> accepted_opt_;
 
 		prob::Bernoulli bernoulli_;
         std::mt19937 rng_ = prob::rng();
