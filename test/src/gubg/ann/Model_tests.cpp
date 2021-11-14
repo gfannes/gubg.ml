@@ -1,6 +1,7 @@
 #include <gubg/ann/Model.hpp>
 #include <gubg/hr.hpp>
 #include <catch.hpp>
+#include <vector>
 using namespace gubg;
 
 TEST_CASE("ann::Model tests", "[ut][ann][Model]")
@@ -10,18 +11,21 @@ TEST_CASE("ann::Model tests", "[ut][ann][Model]")
 	const auto cost_sigma = 0.1;
 	const auto prediction = 0.5;
 
-	const float input = 1.0f;
+	const float input = 2.0f;
 	float target{};
 	float exp_cost{};
+	std::vector<float> exp_gradient;
 	SECTION("target == prediction")
 	{
 		target = prediction;
 		exp_cost = 0.0f;
+		exp_gradient = {0.0f, 0.0f};
 	}
 	SECTION("target == 1")
 	{
 		target = 1.0f;
 		exp_cost = (prediction-target)*(prediction-target)/2/cost_sigma/cost_sigma;
+		exp_gradient = {-12.5f, -25.0f};
 	}
 
 	ann::Model model;
@@ -45,15 +49,9 @@ TEST_CASE("ann::Model tests", "[ut][ann][Model]")
 	L(C(act_cost));
 	REQUIRE(act_cost == Approx(exp_cost));
 
-	{
-		unsigned int count = 0;
-		auto receive_gradient = [&](const auto &gradient){
-			L(C(hr(gradient)));
-			++count;
-		};
-		REQUIRE(!model.avg_gradient(enter_no_data, receive_gradient));
-		REQUIRE(count == 0);
-		REQUIRE(model.avg_gradient(enter_1_data, receive_gradient));
-		REQUIRE(count == 1);
-	}
+	REQUIRE(!model.avg_gradient(enter_no_data));
+	REQUIRE(model.avg_gradient(enter_1_data));
+	REQUIRE(model.gradient.size() == exp_gradient.size());
+	for (auto ix = 0u; ix < model.gradient.size(); ++ix)
+		REQUIRE(model.gradient[ix] == Approx(exp_gradient[ix]));
 }	
