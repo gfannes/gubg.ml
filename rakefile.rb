@@ -2,12 +2,12 @@ require_relative("../gubg.build/bootstrap.rb")
 require("gubg/shared")
 require("gubg/build/Executable")
 require("gubg/build/Library")
-include GUBG
+include Gubg
 
 task :default => :help
 task :help do
-    puts('declare: copy all headers to GUBG::shared')
-    puts('define: build and copy libraries and executables to GUBG::shared')
+    puts('declare: copy all headers to Gubg::shared')
+    puts('define: build and copy libraries and executables to Gubg::shared')
 end
 
 task :declare do
