@@ -73,7 +73,7 @@ namespace gubg { namespace ann { namespace optimization {
 				//First time, we always accept
 				accept = true;
 				auto &accepted = accepted_opt_.emplace();
-				accepted.location.resize(ixr.end());
+				accepted.location.resize(ixr.stop());
 			}
 			else if (proposal_cost <= accepted_opt_->cost)
 			{

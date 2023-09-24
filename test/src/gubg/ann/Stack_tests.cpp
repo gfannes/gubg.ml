@@ -21,15 +21,15 @@ TEST_CASE("ann::Stack tests", "[ut][ann][Stack]")
 	REQUIRE(output_ixr == ix::Range{5,1});
 	REQUIRE(param_ixr == ix::Range{0, 3*3+4});
 
-	ix::Range hidden_ixr{input_ixr.end(), 3};
+	ix::Range hidden_ixr{input_ixr.stop(), 3};
 
-	std::vector<float> activations(output_ixr.end());
+	std::vector<float> activations(output_ixr.stop());
 	input_ixr.each_with_index([](auto &v, auto ix){v = ix+1.0f;}, activations);
 
 	std::vector<float> params(param_ixr.size());
 	param_ixr.each_with_index([](auto &v, auto ix){v = (ix+1)*0.1f;}, params);
 
-	std::vector<float> sufficients(output_ixr.end());
+	std::vector<float> sufficients(output_ixr.stop());
 
 	stack.forward(params, activations, sufficients);
 	REQUIRE(activations[hidden_ixr[0]] == Approx(ann::transfer::Tanh::output(0.1 + 1*0.2 + 2*0.3)));
@@ -38,7 +38,7 @@ TEST_CASE("ann::Stack tests", "[ut][ann][Stack]")
 	REQUIRE(activations[output_ixr[0]] == Approx(params[9] + activations[hidden_ixr[0]]*params[10]+activations[hidden_ixr[1]]*params[11]+activations[hidden_ixr[2]]*params[12]));
 
 	std::vector<float> gradient(param_ixr.size());
-	std::vector<float> errors(output_ixr.end());
+	std::vector<float> errors(output_ixr.stop());
 	errors.back() = 1;
 	stack.backward(params, activations, sufficients, gradient, errors);
 	param_ixr.each_with_index([](auto v, auto ix){std::cout << ix << "\t" << v << std::endl;}, gradient);

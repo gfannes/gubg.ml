@@ -21,13 +21,13 @@ TEST_CASE("ANN Neuron tests", "[ut][ann][Neuron]")
 	REQUIRE(output_ixr == ix::Range{2, 1});
 	REQUIRE(param_ixr == ix::Range{0, 3});
 
-	std::vector<float> activations(output_ixr.end());
+	std::vector<float> activations(output_ixr.stop());
 	input_ixr.each_with_index([](auto &v, auto ix){v = ix+1.0f;}, activations);
 
-	std::vector<float> params(param_ixr.end());
+	std::vector<float> params(param_ixr.stop());
 	param_ixr.each_with_index([](auto &v, auto ix){v = (ix+1)*0.1f;}, params);
 
-	std::vector<float> sufficients(output_ixr.end());
+	std::vector<float> sufficients(output_ixr.stop());
 
 	neuron.forward(params, activations, sufficients);
 	REQUIRE(activations[output_ixr[0]] == Approx(ann::transfer::Tanh::output(0.1 + 1*0.2 + 2*0.3)));

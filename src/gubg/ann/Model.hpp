@@ -33,13 +33,13 @@ namespace gubg { namespace ann {
 			MSS(!!output_ixr_opt_);
 			const auto &output_ixr = *output_ixr_opt_;
 
-			const auto act_size = std::max(input_ixr_.end(), output_ixr.end());
+			const auto act_size = std::max(input_ixr_.stop(), output_ixr.stop());
 			activations_.resize(act_size);
 			sufficients_.resize(act_size);
 			errors_.resize(act_size);
 
-			parameters.resize(param_ixr_.end());
-			gradient.resize(param_ixr_.end());
+			parameters.resize(param_ixr_.stop());
+			gradient.resize(param_ixr_.stop());
 
 			MSS(prediction_cost.setup_ixrs(output_ixr, ix::Range{0u, output_ixr.size()}));
 

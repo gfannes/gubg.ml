@@ -25,14 +25,14 @@ namespace gubg { namespace ann {
 			MSS_BEGIN(bool);
 
 			input_ixr.resize(shape_.nr_inputs);
-			input_ix_ = input_ixr.begin();
+			input_ix_ = input_ixr.start();
 
 			if (!output_ixr_opt)
-				output_ixr_opt = ix::Range{input_ixr.end(), 0u};
-			output_ix_ = output_ixr_opt->end();
+				output_ixr_opt = ix::Range{input_ixr.stop(), 0u};
+			output_ix_ = output_ixr_opt->stop();
 			output_ixr_opt->push_back(1);
 
-			bias_ix_ = param_ixr.end();
+			bias_ix_ = param_ixr.stop();
 			param_ixr.push_back(1u + shape_.nr_inputs);
 	
 			MSS_END();
